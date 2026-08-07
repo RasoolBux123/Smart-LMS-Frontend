@@ -50,7 +50,7 @@ export const instructorNav: NavItem[] = [
   { label: "Quizzes", href: "/instructor/quizzes", icon: ClipboardList },
   { label: "Projects", href: "/instructor/projects", icon: FolderKanban },
   { label: "Submissions", href: "/instructor/submissions", icon: GraduationCap },
-  { label: "Gradebook", href: "/instructor/gradebook", icon: BarChart3 },
+  { label: "Grading", href: "/instructor/grading", icon: GraduationCap },
   { label: "Students", href: "/instructor/students", icon: Users },
   { label: "Notifications", href: "/notifications", icon: Bell },
   { label: "Profile", href: "/profile", icon: UserCircle },
