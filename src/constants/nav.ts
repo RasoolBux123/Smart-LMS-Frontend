@@ -20,7 +20,10 @@ export interface NavItem {
   href: string;
   icon: LucideIcon;
 }
+<<<<<<< HEAD
 import { CalendarCheck2 } from "lucide-react";
+=======
+>>>>>>> dfeee7e2a81e329223cfe39b3b1bf21dade7eb3b
 
 /**
  * Routes (dashboard) group ke hisaab se hain:
@@ -34,7 +37,10 @@ export const studentNav: NavItem[] = [
   { label: "Quizzes", href: "/student/quizzes", icon: ClipboardList },
   { label: "Projects", href: "/student/projects", icon: FolderKanban },
   { label: "Grades", href: "/student/grades", icon: GraduationCap },
+<<<<<<< HEAD
   { label: "Attendance", href: "/student/attendance", icon: CalendarCheck2 },
+=======
+>>>>>>> dfeee7e2a81e329223cfe39b3b1bf21dade7eb3b
   { label: "Insights", href: "/student/insights", icon: BarChart3 },
   { label: "Notifications", href: "/notifications", icon: Bell },
   { label: "Profile", href: "/profile", icon: UserCircle },
@@ -50,7 +56,10 @@ export const instructorNav: NavItem[] = [
   { label: "Projects", href: "/instructor/projects", icon: FolderKanban },
   { label: "Submissions", href: "/instructor/submissions", icon: GraduationCap },
   { label: "Gradebook", href: "/instructor/gradebook", icon: BarChart3 },
+<<<<<<< HEAD
   { label: "Attendance", href: "/instructor/attendance", icon: CalendarCheck2 },
+=======
+>>>>>>> dfeee7e2a81e329223cfe39b3b1bf21dade7eb3b
   { label: "Students", href: "/instructor/students", icon: Users },
   { label: "Notifications", href: "/notifications", icon: Bell },
   { label: "Profile", href: "/profile", icon: UserCircle },
