@@ -82,10 +82,10 @@ export function deleteAssignmentAttachment(id: string, attachmentId: string) {
 }
 
 /** Form ke course dropdown ke liye. Alag file chahiye ho to `lib/api/courses.ts` bana lena. */
-export function getCourseOptions() {
-  return apiFetch<CourseOption[]>("/courses");
+export async function getCourseOptions() {
+  const res = await apiFetch<{ data: CourseOption[] }>("/courses");
+  return res.data;
 }
-
 
 /* ================================================================
    Legacy API (zip 1) — gradebook aur grades pages inhi par chalte
