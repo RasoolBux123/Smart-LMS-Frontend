@@ -1,12 +1,24 @@
-"use client";
+import { CourseworkDetail } from "@/features/student/coursework-detail";
 
-import ComingSoon from "@/app/components/ui/ComingSoon";
+export default async function StudentAssignmentDetailPage({
+  params,
+}: {
+  params: Promise<{ assignmentId: string }>;
+}) {
+  const { assignmentId: id } = await params;
 
-export default function StudentAssignmentDetailPage() {
-  return (
-    <ComingSoon
-      title="Use Assignments list"
-      description="Submit work from the Assignments page. Dedicated detail views can be polished later."
-    />
-  );
+  return <CourseworkDetail kind="assignment" id={id} />;
 }
+
+
+// import { CourseworkDetail } from "@/features/student/coursework-detail";
+
+// export default async function StudentAssignmentDetailPage({
+//   params,
+// }: {
+//   params: Promise<{ assignmentId: string }>;
+// }) {
+//   const { assignmentId: id } = await params;
+
+//   return <CourseworkDetail kind="assignment" id={id} />;
+// }

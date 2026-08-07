@@ -15,7 +15,9 @@ export function middleware(request: NextRequest) {
     path.startsWith("/admin") ||
     path.startsWith("/instructor") ||
     path.startsWith("/student") ||
-    path.startsWith("/notifications");
+    path.startsWith("/notifications") ||
+    path.startsWith("/profile") ||
+    path.startsWith("/settings");
 
   if (isProtected && !role) {
     return NextResponse.redirect(new URL("/login", request.url));
@@ -37,5 +39,7 @@ export const config = {
     "/instructor/:path*",
     "/student/:path*",
     "/notifications/:path*",
+    "/profile/:path*",
+    "/settings/:path*",
   ],
 };

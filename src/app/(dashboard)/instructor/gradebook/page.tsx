@@ -9,6 +9,7 @@ import {
   Assignment,
   Submission,
 } from "@/lib/api/assignments";
+import { errorMessage } from "@/lib/utils";
 
 export default function InstructorGradebookPage() {
   const [courses, setCourses] = useState<Course[]>([]);
@@ -56,8 +57,8 @@ export default function InstructorGradebookPage() {
     try {
       const res = await gradeSubmission(submissionId, score, feedbacks[submissionId] || "");
       setSubmissions((prev) => prev.map((s) => (s.id === submissionId ? res.data : s)));
-    } catch (e: any) {
-      setError(e.message);
+    } catch (e: unknown) {
+      setError(errorMessage(e));
     }
   }
 

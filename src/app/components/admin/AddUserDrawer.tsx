@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { createUser } from "../../../lib/api/users";
+import { createUser, type ManagedUser } from "../../../lib/api/users";
+import { errorMessage } from "@/lib/utils";
 
 type Role = "instructor" | "student";
 
@@ -16,7 +17,7 @@ export default function AddUserDrawer({
   role: Role;
   open: boolean;
   onClose: () => void;
-  onCreated: (user: any) => void;
+  onCreated: (user: ManagedUser) => void;
 }) {
   const [form, setForm] = useState({ name: "", email: "", password: "" });
   const [error, setError] = useState("");
@@ -32,8 +33,8 @@ export default function AddUserDrawer({
       onCreated(res.data);
       setForm({ name: "", email: "", password: "" });
       onClose();
-    } catch (err: any) {
-      setError(err.message || "Could not create user");
+    } catch (err: unknown) {
+      setError(errorMessage(err, "Could not create user"));
     } finally {
       setLoading(false);
     }

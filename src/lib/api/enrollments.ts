@@ -1,4 +1,4 @@
-import { apiFetch } from "./client";
+import { apiFetch, type ApiEnvelope } from "./client";
 
 export interface Enrollment {
   id: string;
@@ -10,16 +10,16 @@ export interface Enrollment {
 }
 
 export async function enrollStudent(courseId: string, userId: string) {
-  return apiFetch("/enrollments", {
+  return apiFetch<ApiEnvelope<Enrollment>>("/enrollments", {
     method: "POST",
     body: JSON.stringify({ courseId, userId }),
   });
 }
 
 export async function listCourseEnrollments(courseId: string) {
-  return apiFetch(`/enrollments/course/${courseId}`);
+  return apiFetch<ApiEnvelope<Enrollment[]>>(`/enrollments/course/${courseId}`);
 }
 
 export async function unenrollStudent(enrollmentId: string) {
-  return apiFetch(`/enrollments/${enrollmentId}`, { method: "DELETE" });
+  return apiFetch<ApiEnvelope<null>>(`/enrollments/${enrollmentId}`, { method: "DELETE" });
 }

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { listUsers, ManagedUser } from "@/lib/api/users";
 import AddUserDrawer from "@/app/components/admin/AddUserDrawer";
+import { errorMessage } from "@/lib/utils";
 
 export default function AdminUsersPage() {
   const [tab, setTab] = useState<"instructor" | "student">("instructor");
@@ -17,8 +18,8 @@ export default function AdminUsersPage() {
       const [iRes, sRes] = await Promise.all([listUsers("instructor"), listUsers("student")]);
       setInstructors(iRes.data);
       setStudents(sRes.data);
-    } catch (err: any) {
-      console.error("Failed to load users:", err.message);
+    } catch (err: unknown) {
+      console.error("Failed to load users:", errorMessage(err));
     } finally {
       setLoading(false);
     }

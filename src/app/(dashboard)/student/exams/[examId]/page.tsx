@@ -1,7 +1,11 @@
-"use client";
+import { CourseworkDetail } from "@/features/student/coursework-detail";
 
-import ComingSoon from "@/app/components/ui/ComingSoon";
+export default async function StudentExamDetailPage({
+  params,
+}: {
+  params: Promise<{ examId: string }>;
+}) {
+  const { examId: id } = await params;
 
-export default function StudentExamDetailPage() {
-  return <ComingSoon title="Exam detail unavailable" description="Use Quizzes instead." />;
+  return <CourseworkDetail kind="exam" id={id} />;
 }

@@ -1,247 +1,325 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { listCourses, Course } from "@/lib/api/courses";
-import { listAssignmentsForCourse, createAssignment, Assignment } from "@/lib/api/assignments";
+import { useMemo, useState } from "react";
+import Link from "next/link";
+import { toast } from "sonner";
 
-type Q = { question: string; options: string[]; correctIndex: number };
+import {
+  Plus,
+  Search,
+  MoreHorizontal,
+  Pencil,
+  Copy,
+  Trash2,
+  Send,
+  Archive,
+  Eye,
+  FileX2,
+} from "lucide-react";
+
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
+
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from "@/components/ui/table";
+
+import { EmptyState } from "@/components/shared/empty-state";
+
+import { ConfirmDialog } from "@/components/shared/confirm-dialog";
+
+import { AssignmentStatusBadge } from "@/components/shared/status-badge";
+import type { AssignmentStatusMeta } from "@/types";
+
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
+
+type QuizRow = {
+  id: string;
+  title: string;
+  course: { code: string };
+  deadline: string;
+  totalMarks: number;
+  submittedCount: number;
+  enrolled: number;
+  status: AssignmentStatusMeta;
+};
+
+const initialQuizzes: QuizRow[] = [];
 
 export default function InstructorQuizzesPage() {
-  const [courses, setCourses] = useState<Course[]>([]);
-  const [quizzes, setQuizzes] = useState<Assignment[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({
-    courseId: "",
-    title: "",
-    description: "",
-    dueAt: "",
-    maxScore: 100,
-  });
-  const [questions, setQuestions] = useState<Q[]>([
-    { question: "", options: ["", "", "", ""], correctIndex: 0 },
-  ]);
-  const [error, setError] = useState("");
-  const [saving, setSaving] = useState(false);
+  const [rows, setRows] = useState(initialQuizzes);
 
-  async function load() {
-    setLoading(true);
-    const cRes = await listCourses();
-    setCourses(cRes.data);
-    const all: Assignment[] = [];
-    for (const c of cRes.data) {
-      const aRes = await listAssignmentsForCourse(c.id);
-      all.push(...aRes.data.filter((a: Assignment) => a.type === "quiz"));
-    }
-    setQuizzes(all);
-    setLoading(false);
+  const [search, setSearch] = useState("");
+
+  const [status, setStatus] = useState("all");
+
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+
+  const filtered = useMemo(() => {
+    let out = rows.filter((q) =>
+      q.title.toLowerCase().includes(search.toLowerCase()),
+    );
+
+    if (status !== "all") out = out.filter((q) => q.status === status);
+
+    return out;
+  }, [rows, search, status]);
+
+  function duplicate(id: string) {
+    const source = rows.find((q) => q.id === id);
+
+    if (!source) return;
+
+    const copy: QuizRow = {
+      ...source,
+
+      id: `${source.id}-copy-${Date.now()}`,
+
+      title: `${source.title} (copy)`,
+
+      status: "draft",
+    };
+
+    setRows((prev) => [copy, ...prev]);
+
+    toast.success("Quiz duplicated.");
   }
 
-  useEffect(() => {
-    load();
-  }, []);
+  function setPublishState(id: string, s: "published" | "archived" | "draft") {
+    setRows((prev) =>
+      prev.map((q) =>
+        q.id === id
+          ? {
+              ...q,
+              status: s,
+            }
+          : q,
+      ),
+    );
 
-  const courseTitle = (id: string) => courses.find((c) => c.id === id)?.title || "—";
+    toast.success(
+      s === "published"
+        ? "Quiz published."
+        : s === "archived"
+          ? "Quiz archived."
+          : "Moved to draft.",
+    );
+  }
 
-  async function handleCreate(e: React.FormEvent) {
-    e.preventDefault();
-    setSaving(true);
-    setError("");
-    try {
-      const cleaned = questions.filter((q) => q.question.trim() && q.options.every((o) => o.trim()));
-      if (cleaned.length === 0) throw new Error("Add at least one complete question");
-      const res = await createAssignment({
-        ...form,
-        type: "quiz",
-        dueAt: new Date(form.dueAt).toISOString(),
-        maxScore: Number(form.maxScore),
-        questions: cleaned,
-      });
-      setQuizzes((prev) => [res.data, ...prev]);
-      setOpen(false);
-      setForm({ courseId: "", title: "", description: "", dueAt: "", maxScore: 100 });
-      setQuestions([{ question: "", options: ["", "", "", ""], correctIndex: 0 }]);
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setSaving(false);
-    }
+  function remove(id: string) {
+    setRows((prev) => prev.filter((q) => q.id !== id));
+
+    toast.success("Quiz deleted.");
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="font-display text-2xl font-semibold text-slate-900">Quizzes</h2>
-          <p className="mt-1 text-sm text-slate-500">Build auto-graded quizzes for your courses.</p>
+          <h1 className="font-display text-2xl font-semibold">Quizzes</h1>
+
+          <p className="text-sm text-muted-foreground">
+            Create, publish, and manage quizzes across your courses.
+          </p>
         </div>
-        <button
-          onClick={() => setOpen(true)}
-          disabled={courses.length === 0}
-          className="rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white disabled:opacity-50"
-        >
-          + Create quiz
-        </button>
+
+        <Button asChild>
+          <Link href="/instructor/quizzes/create">
+            <Plus className="h-4 w-4" />
+            Create Quiz
+          </Link>
+        </Button>
       </div>
 
-      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-slate-100 bg-slate-50/80 text-left text-xs uppercase tracking-wide text-slate-500">
-              <th className="px-6 py-3">Title</th>
-              <th className="px-6 py-3">Course</th>
-              <th className="px-6 py-3">Due</th>
-              <th className="px-6 py-3">Max</th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading && (
-              <tr>
-                <td colSpan={4} className="px-6 py-10 text-center text-slate-400">
-                  Loading…
-                </td>
-              </tr>
-            )}
-            {!loading && quizzes.length === 0 && (
-              <tr>
-                <td colSpan={4} className="px-6 py-10 text-center text-slate-400">
-                  No quizzes yet.
-                </td>
-              </tr>
-            )}
-            {quizzes.map((q) => (
-              <tr key={q.id} className="border-b border-slate-50 last:border-0">
-                <td className="px-6 py-4 font-medium text-slate-900">{q.title}</td>
-                <td className="px-6 py-4 text-slate-600">{courseTitle(q.courseId)}</td>
-                <td className="px-6 py-4 text-slate-600">{new Date(q.dueAt).toLocaleDateString()}</td>
-                <td className="px-6 py-4 text-slate-600">{q.maxScore}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div className="flex flex-col gap-3 sm:flex-row">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+
+          <Input
+            placeholder="Search quizzes..."
+
+            className="pl-9"
+
+            value={search}
+
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+
+        <Select value={status} onValueChange={setStatus}>
+          <SelectTrigger className="w-full sm:w-44">
+            <SelectValue />
+          </SelectTrigger>
+
+          <SelectContent>
+            <SelectItem value="all">All statuses</SelectItem>
+
+            <SelectItem value="published">Published</SelectItem>
+
+            <SelectItem value="draft">Draft</SelectItem>
+
+            <SelectItem value="archived">Archived</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
-      {open && (
-        <div className="fixed inset-0 z-50">
-          <div className="absolute inset-0 bg-slate-900/40" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 top-0 h-full w-full max-w-lg overflow-y-auto bg-white shadow-xl">
-            <div className="border-b border-slate-100 px-6 py-5">
-              <h3 className="font-display text-lg font-semibold text-slate-900">Create quiz</h3>
-            </div>
-            <form onSubmit={handleCreate} className="space-y-4 px-6 py-6">
-              {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
-              <select
-                required
-                value={form.courseId}
-                onChange={(e) => setForm({ ...form, courseId: e.target.value })}
-                className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm"
-              >
-                <option value="">Select course</option>
-                {courses.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.title}
-                  </option>
-                ))}
-              </select>
-              <input
-                required
-                placeholder="Quiz title"
-                value={form.title}
-                onChange={(e) => setForm({ ...form, title: e.target.value })}
-                className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm"
-              />
-              <textarea
-                placeholder="Description"
-                value={form.description}
-                onChange={(e) => setForm({ ...form, description: e.target.value })}
-                className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm"
-                rows={2}
-              />
-              <div className="grid grid-cols-2 gap-3">
-                <input
-                  type="date"
-                  required
-                  value={form.dueAt}
-                  onChange={(e) => setForm({ ...form, dueAt: e.target.value })}
-                  className="rounded-xl border border-slate-200 px-3 py-2.5 text-sm"
-                />
-                <input
-                  type="number"
-                  required
-                  value={form.maxScore}
-                  onChange={(e) => setForm({ ...form, maxScore: Number(e.target.value) })}
-                  className="rounded-xl border border-slate-200 px-3 py-2.5 text-sm"
-                />
-              </div>
+      <div className="rounded-2xl border bg-card overflow-hidden">
+        {filtered.length === 0 ? (
+          <EmptyState
+            icon={FileX2}
 
-              <div className="space-y-4">
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Questions</p>
-                {questions.map((q, qi) => (
-                  <div key={qi} className="rounded-xl border border-slate-200 p-4 space-y-2">
-                    <input
-                      placeholder={`Question ${qi + 1}`}
-                      value={q.question}
-                      onChange={(e) => {
-                        const next = [...questions];
-                        next[qi] = { ...q, question: e.target.value };
-                        setQuestions(next);
-                      }}
-                      className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
-                    />
-                    {q.options.map((opt, oi) => (
-                      <div key={oi} className="flex items-center gap-2">
-                        <input
-                          type="radio"
-                          name={`correct-${qi}`}
-                          checked={q.correctIndex === oi}
-                          onChange={() => {
-                            const next = [...questions];
-                            next[qi] = { ...q, correctIndex: oi };
-                            setQuestions(next);
-                          }}
-                        />
-                        <input
-                          placeholder={`Option ${oi + 1}`}
-                          value={opt}
-                          onChange={(e) => {
-                            const next = [...questions];
-                            const options = [...q.options];
-                            options[oi] = e.target.value;
-                            next[qi] = { ...q, options };
-                            setQuestions(next);
-                          }}
-                          className="flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm"
-                        />
-                      </div>
-                    ))}
-                  </div>
-                ))}
-                <button
-                  type="button"
-                  onClick={() =>
-                    setQuestions((prev) => [
-                      ...prev,
-                      { question: "", options: ["", "", "", ""], correctIndex: 0 },
-                    ])
-                  }
-                  className="text-sm font-medium text-indigo-600"
-                >
-                  + Add question
-                </button>
-              </div>
+            title="No quizzes found"
 
-              <div className="flex gap-3 pt-2">
-                <button type="button" onClick={() => setOpen(false)} className="flex-1 rounded-xl border border-slate-200 py-2.5 text-sm">
-                  Cancel
-                </button>
-                <button type="submit" disabled={saving} className="flex-1 rounded-xl bg-indigo-600 py-2.5 text-sm font-medium text-white disabled:opacity-60">
-                  {saving ? "Saving…" : "Create quiz"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+            description="Try another search or create your first quiz."
+
+            action={
+              <Button asChild>
+                <Link href="/instructor/quizzes/create">Create Quiz</Link>
+              </Button>
+            }
+          />
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Title</TableHead>
+
+                <TableHead>Course</TableHead>
+
+                <TableHead>Deadline</TableHead>
+
+                <TableHead>Marks</TableHead>
+
+                <TableHead>Submissions</TableHead>
+
+                <TableHead>Status</TableHead>
+
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+
+            <TableBody>
+              {filtered.map((quiz) => (
+                <TableRow key={quiz.id}>
+                  <TableCell className="font-medium">{quiz.title}</TableCell>
+
+                  <TableCell>{quiz.course.code}</TableCell>
+
+                  <TableCell>{quiz.deadline}</TableCell>
+
+                  <TableCell>{quiz.totalMarks} pts</TableCell>
+
+                  <TableCell>
+                    {quiz.submittedCount}/{quiz.enrolled}
+                  </TableCell>
+
+                  <TableCell>
+                    <AssignmentStatusBadge status={quiz.status} />
+                  </TableCell>
+
+                  <TableCell className="text-right">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem asChild>
+                          <Link
+                            href={`/instructor/quizzes/${quiz.id}/submissions`}
+                          >
+                            <Eye className="h-4 w-4" />
+                            View submissions
+                          </Link>
+                        </DropdownMenuItem>
+
+                        <DropdownMenuItem asChild>
+                          <Link href={`/instructor/quizzes/edit/${quiz.id}`}>
+                            <Pencil className="h-4 w-4" />
+                            Edit
+                          </Link>
+                        </DropdownMenuItem>
+
+                        <DropdownMenuItem onClick={() => duplicate(quiz.id)}>
+                          <Copy className="h-4 w-4" />
+                          Duplicate
+                        </DropdownMenuItem>
+
+                        <DropdownMenuSeparator />
+
+                        {quiz.status !== "published" && (
+                          <DropdownMenuItem
+                            onClick={() =>
+                              setPublishState(quiz.id, "published")
+                            }
+                          >
+                            <Send className="h-4 w-4" />
+                            Publish
+                          </DropdownMenuItem>
+                        )}
+
+                        {quiz.status !== "archived" && (
+                          <DropdownMenuItem
+                            onClick={() => setPublishState(quiz.id, "archived")}
+                          >
+                            <Archive className="h-4 w-4" />
+                            Archive
+                          </DropdownMenuItem>
+                        )}
+
+                        <DropdownMenuSeparator />
+
+                        <DropdownMenuItem
+                          destructive
+                          onClick={() => setDeleteId(quiz.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </div>
+
+      <ConfirmDialog
+        open={!!deleteId}
+
+        onOpenChange={(v) => !v && setDeleteId(null)}
+
+        title="Delete this quiz?"
+
+        description="This will permanently remove the quiz."
+
+        confirmLabel="Delete quiz"
+
+        onConfirm={() => deleteId && remove(deleteId)}
+      />
     </div>
   );
 }

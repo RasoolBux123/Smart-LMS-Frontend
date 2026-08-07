@@ -1,78 +1,257 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
 
 :root {
-  --background: #f4f7ff;
-  --foreground: #0f172a;
-  --sidebar-width: 16rem;
-  --primary: #4f46e5;
-  --secondary: #0f766e;
-  --success: #16a34a;
-  --danger: #ef4444;
-  --card-bg: rgba(255, 255, 255, 0.86);
-  --border: rgba(148, 163, 184, 0.28);
-  --shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
+  --radius: 0.85rem;
+
+  --background: #f6f7fb;
+  --surface: #ffffff;
+  --surface-muted: #f0f1f7;
+  --foreground: #171a2b;
+  --muted-foreground: #6b7091;
+  --border: #e4e6f1;
+  --border-strong: #d3d6e8;
+
+  --primary: #4338ca;
+  --primary-foreground: #ffffff;
+  --primary-soft: #eef0fd;
+
+  --accent: #0d9488;
+  --accent-foreground: #ffffff;
+  --accent-soft: #e3f6f3;
+
+  --success: #15803d;
+  --success-soft: #e6f5ea;
+  --warning: #b45309;
+  --warning-soft: #fdf1de;
+  --danger: #be123c;
+  --danger-soft: #fce5ea;
+  --info: #1d4ed8;
+  --info-soft: #e7edfc;
+
+  --card: var(--surface);
+  --card-foreground: var(--foreground);
+  --popover: var(--surface);
+  --popover-foreground: var(--foreground);
+  --secondary: var(--surface-muted);
+  --secondary-foreground: var(--foreground);
+  --muted: var(--surface-muted);
+  --destructive: var(--danger);
+  --destructive-foreground: #ffffff;
+  --input: var(--border);
+  --ring: var(--primary);
+
+  --sidebar: #17193a;
+  --sidebar-foreground: #c7c9e6;
+  --sidebar-active: #262a5c;
+  --sidebar-accent: #6d6ff7;
+
+  /* Swap these for next/font/google (Lexend + Inter) variables if your
+     build environment has access to fonts.googleapis.com. */
+  /* Fonts root layout ke <link> se load hote hain. */
+  --font-display:
+    "Lexend", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-body:
+    "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 
-* {
-  box-sizing: border-box;
+.dark {
+  --background: #0b0c18;
+  --surface: #13152b;
+  --surface-muted: #1a1d3a;
+  --foreground: #e9eaf7;
+  --muted-foreground: #9296c2;
+  --border: #262a52;
+  --border-strong: #333865;
+
+  --primary: #818cf8;
+  --primary-foreground: #0b0c18;
+  --primary-soft: #1e2050;
+
+  --accent: #2dd4bf;
+  --accent-foreground: #0b0c18;
+  --accent-soft: #10302e;
+
+  --success: #4ade80;
+  --success-soft: #123321;
+  --warning: #fbbf24;
+  --warning-soft: #382709;
+  --danger: #fb7185;
+  --danger-soft: #3a1421;
+  --info: #60a5fa;
+  --info-soft: #14264d;
+
+  --card: var(--surface);
+  --card-foreground: var(--foreground);
+  --popover: var(--surface);
+  --popover-foreground: var(--foreground);
+  --secondary: var(--surface-muted);
+  --secondary-foreground: var(--foreground);
+  --muted: var(--surface-muted);
+  --destructive: var(--danger);
+  --destructive-foreground: #0b0c18;
+  --input: var(--border);
+  --ring: var(--primary);
+
+  --sidebar: #0b0c1f;
+  --sidebar-foreground: #a6a9d6;
+  --sidebar-active: #1b1e44;
+  --sidebar-accent: #818cf8;
 }
 
-html,
-body {
-  margin: 0;
-  padding: 0;
-  min-height: 100%;
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-soft: var(--primary-soft);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent-soft: var(--accent-soft);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-active: var(--sidebar-active);
+  --color-sidebar-accent: var(--sidebar-accent);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 10px);
+
+  --font-display: var(--font-display);
+  --font-body: var(--font-body);
 }
 
-body {
-  background:
-    radial-gradient(circle at top left, rgba(79, 70, 229, 0.16), transparent 24%),
-    radial-gradient(circle at top right, rgba(20, 184, 166, 0.16), transparent 26%),
-    var(--background);
-  color: var(--foreground);
-  font-family: var(--font-body), system-ui, -apple-system, sans-serif;
-  -webkit-font-smoothing: antialiased;
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+  html {
+    scroll-behavior: smooth;
+  }
+  body {
+    background: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-body), ui-sans-serif, system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-display), ui-sans-serif, system-ui, sans-serif;
+    letter-spacing: -0.02em;
+  }
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+  ::selection {
+    background: var(--primary-soft);
+    color: var(--primary);
+  }
 }
 
-.font-display {
-  font-family: var(--font-display), var(--font-body), system-ui, sans-serif;
+@layer utilities {
+  .glass {
+    background: color-mix(in srgb, var(--surface) 72%, transparent);
+    backdrop-filter: blur(16px) saturate(160%);
+    -webkit-backdrop-filter: blur(16px) saturate(160%);
+    border: 1px solid color-mix(in srgb, var(--border-strong) 60%, transparent);
+  }
+  .card-shadow {
+    box-shadow:
+      0 1px 2px rgba(23, 26, 43, 0.04),
+      0 8px 24px -12px rgba(23, 26, 43, 0.1);
+  }
+  .card-shadow-lg {
+    box-shadow:
+      0 4px 12px rgba(23, 26, 43, 0.06),
+      0 24px 48px -20px rgba(23, 26, 43, 0.18);
+  }
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: var(--border-strong);
+    border-radius: 999px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .text-balance {
+    text-wrap: balance;
+  }
 }
 
-.font-body {
-  font-family: var(--font-body), system-ui, sans-serif;
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, #cbd5e1 0%, #94a3b8 100%);
-  border-radius: 999px;
-}
-
-::selection {
-  background: rgba(99, 102, 241, 0.25);
-  color: #312e81;
-}
-
-:focus-visible {
-  outline: 2px solid #6366f1;
-  outline-offset: 2px;
-}
-
-.glass-card {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(248, 250, 252, 0.86));
-  border: 1px solid rgba(226, 232, 240, 0.95);
-  box-shadow: 0 24px 70px -30px rgba(15, 23, 42, 0.28);
-  backdrop-filter: blur(18px);
-}
-
-.hero-grid {
-  background-image: linear-gradient(rgba(148, 163, 184, 0.12) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(148, 163, 184, 0.12) 1px, transparent 1px);
-  background-size: 26px 26px;
+/* ---------------------------------------------------------------
+   Legacy utilities (zip 1) — admin, login aur ComingSoon pages
+   inhe use karte hain, is liye rakhi gayi hain.
+--------------------------------------------------------------- */
+@layer utilities {
+  .font-display {
+    font-family: var(--font-display), ui-sans-serif, system-ui, sans-serif;
+  }
+  .font-body {
+    font-family: var(--font-body), ui-sans-serif, system-ui, sans-serif;
+  }
+  .glass-card {
+    background: color-mix(in srgb, var(--surface) 92%, transparent);
+    border: 1px solid var(--border);
+    box-shadow: 0 24px 70px -30px rgba(23, 26, 43, 0.28);
+    backdrop-filter: blur(18px);
+  }
+  .hero-grid {
+    background-image:
+      linear-gradient(color-mix(in srgb, var(--border-strong) 55%, transparent) 1px, transparent 1px),
+      linear-gradient(90deg, color-mix(in srgb, var(--border-strong) 55%, transparent) 1px, transparent 1px);
+    background-size: 26px 26px;
+  }
+  .animate-fade-in {
+    animation: fadeIn 0.25s ease-out;
+  }
+  .animate-float {
+    animation: float 4s ease-in-out infinite;
+  }
 }
 
 @keyframes fadeIn {
@@ -94,12 +273,4 @@ body {
   50% {
     transform: translateY(-6px);
   }
-}
-
-.animate-fade-in {
-  animation: fadeIn 0.25s ease-out;
-}
-
-.animate-float {
-  animation: float 4s ease-in-out infinite;
 }

@@ -13,6 +13,7 @@ import {
   Material,
 } from "@/lib/api/courses";
 import { Plus, ChevronDown, ChevronRight, BookOpen } from "lucide-react";
+import { errorMessage } from "@/lib/utils";
 
 export default function InstructorCoursesPage() {
   const [courses, setCourses] = useState<Course[]>([]);
@@ -35,8 +36,8 @@ export default function InstructorCoursesPage() {
     try {
       const res = await listCourses();
       setCourses(res.data);
-    } catch (e: any) {
-      setError(e.message);
+    } catch (e: unknown) {
+      setError(errorMessage(e));
     } finally {
       setLoading(false);
     }
@@ -56,8 +57,8 @@ export default function InstructorCoursesPage() {
       setTitle("");
       setDescription("");
       setShowForm(false);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(errorMessage(err));
     } finally {
       setCreating(false);
     }

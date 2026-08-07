@@ -1,36 +1,90 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# SmartLMS — Frontend
 
-## Getting Started
+Next.js 16 (App Router) + React 19 + Tailwind v4 + shadcn/ui.
+Ye zip 1 (auth + router structure) aur zip 2 (assignments / exams / quizzes /
+projects module) ka merged version hai.
 
-First, run the development server:
+## Chalane ka tareeqa
+
+### 1. Backend (FastAPI + MongoDB)
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+cd backend
+python -m venv venv
+venv\Scripts\activate         # Windows
+# source venv/bin/activate    # macOS / Linux
+pip install -r requirements.txt
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+`backend/.env` me MongoDB ki details daalo:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```
+MONGO_URL=mongodb://localhost:27017
+DATABASE_NAME=smartlms
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Dummy users banane ke liye ek dafa:
 
-## Learn More
+```bash
+python seed.py
+```
 
-To learn more about Next.js, take a look at the following resources:
+Server chalao:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+uvicorn main:app --reload      # http://localhost:8000
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### 2. Frontend
 
-## Deploy on Vercel
+```bash
+cd Smart-LMS-Frontend
+npm install
+npm run dev                    # http://localhost:3000
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+`.env.local` pehle se maujood hai:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```
+NEXT_PUBLIC_API_URL=http://localhost:8000
+```
+
+## Test logins (seed.py se)
+
+| Role       | Email                      | Password       |
+| ---------- | -------------------------- | -------------- |
+| Admin      | admin@smartlms.com         | admin123       |
+| Instructor | instructor@smartlms.com    | instructor123  |
+| Student    | student@smartlms.com       | student123     |
+
+## Structure
+
+```
+src/
+  app/
+    (auth)/          login, register
+    (dashboard)/     layout = AppShell + auth guard
+      admin/         dashboard, users, courses, analytics
+      instructor/    dashboard, courses, assignments, exams, quizzes,
+                     projects, submissions, gradebook, students
+      student/       dashboard, courses, assignments, exams, quizzes,
+                     projects, grades, insights
+      profile/  settings/  notifications/
+  components/        ui (shadcn), layout (shell/sidebar/navbar), shared
+  features/          instructor + student ke bade feature components
+  data/              mock/seed arrays — API aane par yahi replace karna hai
+  lib/api/           backend calls (client.ts me Bearer token lagta hai)
+  lib/selectors.ts   data/ par derived queries
+  context/auth/      AuthContext (login, logout, session restore)
+  middleware.ts      cookie `role` par route protection
+```
+
+## Aage kya karna hai
+
+- `src/data/*.ts` abhi khali arrays hain. Backend ready hone par inhe
+  `src/lib/api/*` calls se replace karo — `lib/selectors.ts` ka shape wahi
+  rakhna, taake pages na tooten.
+- Backend me abhi sirf `POST /auth/login` hai. Frontend jo aur endpoints
+  expect karta hai: `/auth/me`, `/auth/register`, `/courses`, `/users`,
+  `/assignments`, `/enrollments`, `/submissions`.
+- Next 16 me `middleware.ts` deprecated hai — baad me `proxy.ts` rename kar lena.

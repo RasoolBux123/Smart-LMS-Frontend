@@ -1,7 +1,11 @@
-"use client";
+import { CourseworkDetail } from "@/features/student/coursework-detail";
 
-import ComingSoon from "@/app/components/ui/ComingSoon";
+export default async function StudentProjectDetailPage({
+  params,
+}: {
+  params: Promise<{ projectId: string }>;
+}) {
+  const { projectId: id } = await params;
 
-export default function StudentProjectDetailPage() {
-  return <ComingSoon title="Project detail unavailable" />;
+  return <CourseworkDetail kind="project" id={id} />;
 }

@@ -1,65 +1,101 @@
 "use client";
 
-import { createContext, useEffect, useState, ReactNode } from "react";
+import {
+  createContext,
+  useCallback,
+  useEffect,
+  useState,
+  type ReactNode,
+} from "react";
 import { useRouter } from "next/navigation";
-import { loginRequest, meRequest } from "@/lib/api/auth";
+import { loginRequest, type AuthUser } from "@/lib/api/auth";
+import type { Role } from "@/types";
 
-export type Role = "admin" | "instructor" | "student";
-
-export interface User {
-  id: string;
-  name: string;
-  email: string;
-  role: Role;
-  status: string;
-}
+export type { Role };
+export type User = AuthUser;
 
 export interface AuthContextType {
   user: User | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  logout: () => void;
+  login(email: string, password: string): Promise<void>;
+  logout(): void;
 }
 
-export const AuthContext = createContext<AuthContextType | undefined>(undefined);
+export const AuthContext = createContext<AuthContextType | undefined>(
+  undefined,
+);
+
+const STORAGE_TOKEN = "token";
+const STORAGE_USER = "user";
+
+const ROLE_HOME: Record<Role, string> = {
+  admin: "/admin",
+  instructor: "/instructor",
+  student: "/student",
+};
+
+function setRoleCookie(role: Role) {
+  document.cookie = `role=${role}; path=/; max-age=604800; SameSite=Lax`;
+}
+
+function clearRoleCookie() {
+  document.cookie = "role=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const router = useRouter();
 
+  /* Page reload par session localStorage se wapas uthao. */
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token) {
+    try {
+      const token = localStorage.getItem(STORAGE_TOKEN);
+      const savedUser = localStorage.getItem(STORAGE_USER);
+
+      if (token && savedUser) {
+        const parsed = JSON.parse(savedUser) as User;
+        setUser(parsed);
+        // Middleware cookie par chalta hai — reload ke baad usay bhi bahaal karo.
+        setRoleCookie(parsed.role);
+      }
+    } catch {
+      localStorage.removeItem(STORAGE_TOKEN);
+      localStorage.removeItem(STORAGE_USER);
+    } finally {
       setLoading(false);
-      return;
     }
-    meRequest()
-      .then((res) => setUser(res.data))
-      .catch(() => localStorage.removeItem("token"))
-      .finally(() => setLoading(false));
   }, []);
 
-  async function login(email: string, password: string) {
-    const res = await loginRequest(email, password);
-    localStorage.setItem("token", res.data.token);
-    document.cookie = `role=${res.data.user.role}; path=/`;
-    setUser(res.data.user);
-    redirectByRole(res.data.user.role);
-  }
+  const login = useCallback(
+    async (email: string, password: string) => {
+      const res = await loginRequest(email, password);
 
-  function logout() {
-    localStorage.removeItem("token");
-    document.cookie = "role=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+      const token = res.access_token;
+      const loggedUser = res.user;
+
+      if (!token || !loggedUser) {
+        throw new Error("Invalid login response");
+      }
+
+      localStorage.setItem(STORAGE_TOKEN, token);
+      localStorage.setItem(STORAGE_USER, JSON.stringify(loggedUser));
+      setRoleCookie(loggedUser.role);
+
+      setUser(loggedUser);
+      router.push(ROLE_HOME[loggedUser.role] ?? "/student");
+    },
+    [router],
+  );
+
+  const logout = useCallback(() => {
+    localStorage.removeItem(STORAGE_TOKEN);
+    localStorage.removeItem(STORAGE_USER);
+    clearRoleCookie();
+
     setUser(null);
     router.push("/login");
-  }
-
-  function redirectByRole(role: Role) {
-    if (role === "admin") router.push("/admin");
-    else if (role === "instructor") router.push("/instructor");
-    else router.push("/student");
-  }
+  }, [router]);
 
   return (
     <AuthContext.Provider value={{ user, loading, login, logout }}>
