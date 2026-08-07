@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { errorMessage } from "@/lib/utils";
 
 type Role = "admin" | "instructor" | "student";
 
@@ -27,8 +28,8 @@ export default function LoginPage() {
     setLoading(true);
     try {
       await login(email, password);
-    } catch (err: any) {
-      setError(err.message || "Login failed");
+    } catch (err: unknown) {
+      setError(errorMessage(err, "Login failed"));
     } finally {
       setLoading(false);
     }

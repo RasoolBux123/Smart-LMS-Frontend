@@ -1,4 +1,4 @@
-import { apiFetch } from "./client";
+import { apiFetch, type ApiEnvelope } from "./client";
 
 export interface ManagedUser {
   id: string;
@@ -10,7 +10,7 @@ export interface ManagedUser {
 
 export async function listUsers(role?: "instructor" | "student") {
   const query = role ? `?role=${role}` : "";
-  return apiFetch(`/users${query}`);
+  return apiFetch<ApiEnvelope<ManagedUser[]>>(`/users${query}`);
 }
 
 export async function createUser(data: {
@@ -19,7 +19,7 @@ export async function createUser(data: {
   password: string;
   role: "instructor" | "student";
 }) {
-  return apiFetch("/users", {
+  return apiFetch<ApiEnvelope<ManagedUser>>("/users", {
     method: "POST",
     body: JSON.stringify(data),
   });

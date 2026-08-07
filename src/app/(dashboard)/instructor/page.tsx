@@ -1,143 +1,153 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
-import { listCourses, Course } from "@/lib/api/courses";
-import { listAssignmentsForCourse } from "@/lib/api/assignments";
-import { BookOpen, FileText, ListChecks, ArrowUpRight } from "lucide-react";
+import {
+  FileText,
+  Send,
+  Hourglass,
+  AlertTriangle,
+  Users,
+  ArrowRight,
+  Plus,
+} from "lucide-react";
+import { StatCard } from "@/components/shared/stat-card";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { AssignmentStatusBadge } from "@/components/shared/status-badge";
+import { Badge } from "@/components/ui/badge";
+import {
+  SubmissionsTrendChart,
+  StatusBreakdownChart,
+} from "@/features/instructor/charts";
+import { instructor } from "@/data/users";
+import {
+  assignmentsForInstructor,
+  instructorStats,
+  submissionStatusBreakdown,
+  weeklySubmissionTrend,
+} from "@/lib/selectors";
+import { formatDate } from "@/lib/utils";
 
-export default function InstructorOverviewPage() {
-  const [courses, setCourses] = useState<Course[]>([]);
-  const [assignmentCount, setAssignmentCount] = useState(0);
-  const [quizCount, setQuizCount] = useState(0);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    async function load() {
-      try {
-        const cRes = await listCourses();
-        setCourses(cRes.data);
-        let assignments = 0;
-        let quizzes = 0;
-        for (const c of cRes.data) {
-          const aRes = await listAssignmentsForCourse(c.id);
-          assignments += aRes.data.filter((a: { type: string }) => a.type === "assignment").length;
-          quizzes += aRes.data.filter((a: { type: string }) => a.type === "quiz").length;
-        }
-        setAssignmentCount(assignments);
-        setQuizCount(quizzes);
-      } finally {
-        setLoading(false);
-      }
-    }
-    load();
-  }, []);
-
-  const stats = [
-    {
-      label: "Courses",
-      value: courses.length,
-      icon: BookOpen,
-      href: "/instructor/courses",
-      tint: "bg-indigo-50 text-indigo-700",
-    },
-    {
-      label: "Assignments",
-      value: assignmentCount,
-      icon: FileText,
-      href: "/instructor/assignments",
-      tint: "bg-violet-50 text-violet-700",
-    },
-    {
-      label: "Quizzes",
-      value: quizCount,
-      icon: ListChecks,
-      href: "/instructor/quizzes",
-      tint: "bg-sky-50 text-sky-700",
-    },
-  ];
+export default function InstructorDashboardPage() {
+  const stats = instructorStats(instructor.id);
+  const rows = assignmentsForInstructor(instructor.id).slice(0, 5);
+  const trend = weeklySubmissionTrend();
+  const breakdown = submissionStatusBreakdown();
 
   return (
-    <div className="space-y-8">
-      <section>
-        <h2 className="font-display text-2xl font-semibold tracking-tight text-slate-900">
-          Welcome back
-        </h2>
-        <p className="mt-1 max-w-2xl text-sm leading-relaxed text-slate-500">
-          Manage courses, assessments, enrollments, and grades from one workspace.
-        </p>
-      </section>
-
-      <section className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        {stats.map((s) => {
-          const Icon = s.icon;
-          return (
-            <Link
-              key={s.label}
-              href={s.href}
-              className="group rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-indigo-200 hover:shadow-md"
-            >
-              <div className="flex items-start justify-between">
-                <div className={`flex h-11 w-11 items-center justify-center rounded-2xl ${s.tint}`}>
-                  <Icon size={20} />
-                </div>
-                <ArrowUpRight
-                  size={16}
-                  className="text-slate-300 transition group-hover:text-indigo-500"
-                />
-              </div>
-              <p className="mt-5 font-display text-3xl font-semibold text-slate-900">
-                {loading ? "—" : s.value}
-              </p>
-              <p className="mt-1 text-sm font-medium text-slate-500">{s.label}</p>
-            </Link>
-          );
-        })}
-      </section>
-
-      <section className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm sm:p-6">
-        <div className="mb-5 flex items-center justify-between gap-3">
-          <h3 className="font-display text-lg font-semibold text-slate-900">Your courses</h3>
-          <Link
-            href="/instructor/courses"
-            className="text-sm font-semibold text-indigo-600 hover:text-indigo-700"
-          >
-            Manage
-          </Link>
+    <div className="space-y-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="font-display text-2xl font-semibold">
+            Welcome back, {instructor.name.split(" ").at(-1)}
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            {[instructor.title, instructor.department]
+              .filter(Boolean)
+              .join(" · ")}
+          </p>
         </div>
+        <Button asChild>
+          <Link href="/instructor/assignments/create">
+            <Plus className="h-4 w-4" /> Create assignment
+          </Link>
+        </Button>
+      </div>
 
-        {loading ? (
-          <p className="text-sm text-slate-400">Loading…</p>
-        ) : courses.length === 0 ? (
-          <div className="rounded-2xl bg-slate-50 px-6 py-12 text-center">
-            <p className="mb-4 text-sm text-slate-500">No courses yet.</p>
-            <Link
-              href="/instructor/courses"
-              className="inline-flex rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white"
-            >
-              Create your first course
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
+        <StatCard
+          label="Total assignments"
+          value={stats.totalAssignments}
+          icon={FileText}
+          tone="primary"
+          index={0}
+        />
+        <StatCard
+          label="Published"
+          value={stats.published}
+          icon={Send}
+          tone="accent"
+          index={1}
+        />
+        <StatCard
+          label="Pending review"
+          value={stats.pendingReview}
+          icon={Hourglass}
+          tone="warning"
+          index={2}
+        />
+        <StatCard
+          label="Late submissions"
+          value={stats.lateSubmissions}
+          icon={AlertTriangle}
+          tone="danger"
+          index={3}
+        />
+        <StatCard
+          label="Total students"
+          value={stats.totalStudents}
+          icon={Users}
+          tone="info"
+          index={4}
+        />
+      </div>
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle>Submission activity</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <SubmissionsTrendChart data={trend} />
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Status breakdown</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <StatusBreakdownChart data={breakdown} />
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card>
+        <CardHeader className="flex-row items-center justify-between space-y-0">
+          <CardTitle>Recent assignments</CardTitle>
+          <Button variant="ghost" size="sm" asChild>
+            <Link href="/instructor/assignments">
+              View all <ArrowRight className="h-3.5 w-3.5" />
             </Link>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            {courses.slice(0, 6).map((c) => (
-              <Link
-                key={c.id}
-                href="/instructor/courses"
-                className="rounded-2xl border border-slate-100 bg-slate-50/70 p-4 transition hover:border-indigo-200 hover:bg-white"
-              >
-                <p className="font-semibold text-slate-900">{c.title}</p>
-                <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-slate-500">
-                  {c.description || "No description"}
+          </Button>
+        </CardHeader>
+        <CardContent className="space-y-1">
+          {rows.length === 0 && (
+            <p className="py-6 text-center text-sm text-muted-foreground">
+              No assignments yet. Create one to get started.
+            </p>
+          )}
+          {rows.map((a) => (
+            <Link
+              key={a.id}
+              href={`/instructor/submissions?assignment=${a.id}`}
+              className="flex flex-col gap-2 rounded-xl border border-transparent p-3 transition-colors hover:border-border hover:bg-secondary/60 sm:flex-row sm:items-center sm:justify-between"
+            >
+              <div className="min-w-0">
+                <p className="truncate text-sm font-medium">{a.title}</p>
+                <p className="text-xs text-muted-foreground">
+                  {a.course.code} · Due {formatDate(a.deadline)}
                 </p>
-                <span className="mt-4 inline-flex rounded-full bg-indigo-50 px-2.5 py-1 text-xs font-semibold capitalize text-indigo-700">
-                  {c.status}
-                </span>
-              </Link>
-            ))}
-          </div>
-        )}
-      </section>
+              </div>
+              <div className="flex items-center gap-2">
+                <Badge variant="outline">
+                  {a.submittedCount}/{a.enrolled} submitted
+                </Badge>
+                <AssignmentStatusBadge status={a.status} />
+              </div>
+            </Link>
+          ))}
+        </CardContent>
+      </Card>
     </div>
   );
 }

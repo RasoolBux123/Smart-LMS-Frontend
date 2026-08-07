@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import Sidebar from "../components/layout/Sidebar";
-import Header from "../components/layout/Header";
-import { useAuth } from "../../hooks/useAuth";
+import { AppShell } from "@/components/layout/app-shell";
+import { useAuth } from "@/hooks/useAuth";
+import type { User } from "@/types";
 
 const ROLE_HOME = {
   admin: "/admin",
@@ -12,55 +12,69 @@ const ROLE_HOME = {
   student: "/student",
 } as const;
 
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+const AVATAR_COLOR = {
+  admin: "#B45309",
+  instructor: "#4338CA",
+  student: "#0D9488",
+} as const;
+
+/** Routes jo har role ke liye khuli hain. */
+const SHARED_ROUTES = ["/notifications", "/profile", "/settings"];
+
+export default function DashboardLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const { user, loading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
-  const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
     if (loading) return;
+
     if (!user) {
       router.replace("/login");
       return;
     }
+
     const home = ROLE_HOME[user.role];
     const allowed =
-      pathname === "/notifications" ||
+      SHARED_ROUTES.some((r) => pathname === r || pathname.startsWith(`${r}/`)) ||
       pathname === home ||
       pathname.startsWith(`${home}/`);
+
     if (!allowed) router.replace(home);
   }, [loading, user, pathname, router]);
 
-  useEffect(() => {
-    setMobileOpen(false);
-  }, [pathname]);
+  /** AuthContext ka user -> AppShell/Navbar ka User shape. */
+  const shellUser = useMemo<User | null>(() => {
+    if (!user) return null;
+    return {
+      id: user.id ?? user.email,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      avatarColor: AVATAR_COLOR[user.role],
+    };
+  }, [user]);
 
   if (loading) {
     return (
-      <div className="relative flex min-h-screen items-center justify-center bg-[#F7F9FC]">
-        <div className="hero-grid absolute inset-0 opacity-30" />
-        <div className="relative flex flex-col items-center gap-3 rounded-[2rem] border border-slate-200/80 bg-white/80 px-8 py-7 shadow-[0_24px_70px_-30px_rgba(15,23,42,0.3)] backdrop-blur">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-slate-200 border-t-indigo-600" />
-          <p className="text-sm text-slate-400">Loading workspace…</p>
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-3">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-border border-t-primary" />
+          <p className="text-sm text-muted-foreground">Loading workspace…</p>
         </div>
       </div>
     );
   }
 
-  if (!user) return null;
+  if (!user || !shellUser) return null;
 
   return (
-    <div className="relative flex min-h-screen bg-[#F7F9FC]">
-      <div className="hero-grid pointer-events-none absolute inset-0 opacity-25" />
-      <Sidebar mobileOpen={mobileOpen} onClose={() => setMobileOpen(false)} />
-
-      <div className="relative flex min-w-0 flex-1 flex-col">
-        <Header onMenuClick={() => setMobileOpen(true)} />
-        <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
-          <div className="mx-auto w-full max-w-6xl animate-fade-in">{children}</div>
-        </main>
-      </div>
-    </div>
+    <AppShell role={user.role} user={shellUser}>
+      {children}
+    </AppShell>
   );
 }
