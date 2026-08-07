@@ -11,6 +11,7 @@ import {
   BookOpen,
   BarChart3,
   Bell,
+  CalendarCheck2,
   type LucideIcon,
 } from "lucide-react";
 import type { Role } from "@/types";
@@ -20,10 +21,6 @@ export interface NavItem {
   href: string;
   icon: LucideIcon;
 }
-<<<<<<< HEAD
-import { CalendarCheck2 } from "lucide-react";
-=======
->>>>>>> dfeee7e2a81e329223cfe39b3b1bf21dade7eb3b
 
 /**
  * Routes (dashboard) group ke hisaab se hain:
@@ -32,15 +29,12 @@ import { CalendarCheck2 } from "lucide-react";
 export const studentNav: NavItem[] = [
   { label: "Dashboard", href: "/student", icon: LayoutDashboard },
   { label: "My Courses", href: "/student/courses", icon: BookOpen },
+  { label: "Attendance", href: "/student/attendance", icon: CalendarCheck2 },
   { label: "Assignments", href: "/student/assignments", icon: FileText },
   { label: "Exams", href: "/student/exams", icon: ClipboardCheck },
   { label: "Quizzes", href: "/student/quizzes", icon: ClipboardList },
   { label: "Projects", href: "/student/projects", icon: FolderKanban },
   { label: "Grades", href: "/student/grades", icon: GraduationCap },
-<<<<<<< HEAD
-  { label: "Attendance", href: "/student/attendance", icon: CalendarCheck2 },
-=======
->>>>>>> dfeee7e2a81e329223cfe39b3b1bf21dade7eb3b
   { label: "Insights", href: "/student/insights", icon: BarChart3 },
   { label: "Notifications", href: "/notifications", icon: Bell },
   { label: "Profile", href: "/profile", icon: UserCircle },
@@ -50,16 +44,13 @@ export const studentNav: NavItem[] = [
 export const instructorNav: NavItem[] = [
   { label: "Dashboard", href: "/instructor", icon: LayoutDashboard },
   { label: "Courses", href: "/instructor/courses", icon: BookOpen },
+  { label: "Attendance", href: "/instructor/attendance", icon: CalendarCheck2 },
   { label: "Assignments", href: "/instructor/assignments", icon: FileText },
   { label: "Exams", href: "/instructor/exams", icon: ClipboardCheck },
   { label: "Quizzes", href: "/instructor/quizzes", icon: ClipboardList },
   { label: "Projects", href: "/instructor/projects", icon: FolderKanban },
   { label: "Submissions", href: "/instructor/submissions", icon: GraduationCap },
   { label: "Gradebook", href: "/instructor/gradebook", icon: BarChart3 },
-<<<<<<< HEAD
-  { label: "Attendance", href: "/instructor/attendance", icon: CalendarCheck2 },
-=======
->>>>>>> dfeee7e2a81e329223cfe39b3b1bf21dade7eb3b
   { label: "Students", href: "/instructor/students", icon: Users },
   { label: "Notifications", href: "/notifications", icon: Bell },
   { label: "Profile", href: "/profile", icon: UserCircle },
