@@ -1,26 +1,37 @@
 import { apiFetch } from "./client";
-import type { Role } from "@/types";
-
-export interface AuthUser {
-  id?: string;
-  name: string;
-  email: string;
-  role: Role;
-  status?: string;
-}
 
 export interface LoginResponse {
   access_token: string;
-  user: AuthUser;
+  user: {
+    id: string;
+    name: string;
+    email: string;
+    role: "admin" | "instructor" | "student";
+  };
 }
 
-export async function loginRequest(email: string, password: string) {
-  return apiFetch<LoginResponse>("/auth/login", {
+export async function loginRequest(
+  email: string,
+  password: string
+): Promise<LoginResponse> {
+  const res = await apiFetch<{
+    success: boolean;
+    data: {
+      token: string;
+      user: LoginResponse["user"];
+    };
+    message: string;
+  }>("/auth/login", {
     method: "POST",
     body: JSON.stringify({ email, password }),
   });
+
+  return {
+    access_token: res.data.token,
+    user: res.data.user,
+  };
 }
 
 export async function meRequest() {
-  return apiFetch<AuthUser>("/auth/me");
+  return apiFetch("/auth/me");
 }
