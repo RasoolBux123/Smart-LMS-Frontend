@@ -3,7 +3,7 @@
 
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
-import { Course, CoursePayload, Instructor } from "@/lib/api/courses-api";
+import { Course, CoursePayload, Instructor } from "@/lib/api/courses";
 
 type Props = {
   initial: Course | null; // null = create mode
@@ -28,8 +28,8 @@ export default function CourseForm({
     title: initial?.title ?? "",
     description: initial?.description ?? "",
     category: initial?.category ?? "",
-    instructor_id: initial?.instructor_id ?? "",
-    duration_weeks: initial?.duration_weeks?.toString() ?? "",
+    instructorId: initial?.instructorId ?? "",
+    durationWeeks: initial?.durationWeeks?.toString() ?? "",
     status: initial?.status ?? ("draft" as "draft" | "published"),
   });
   const [errors, setErrors] = useState<Record<string, string | undefined>>({});
@@ -44,9 +44,9 @@ export default function CourseForm({
     if (!form.title.trim()) next.title = "Course title is required.";
     if (!form.description.trim()) next.description = "Description is required.";
     if (!form.category.trim()) next.category = "Course category is required.";
-    if (!form.instructor_id) next.instructor_id = "Select an instructor.";
-    if (form.duration_weeks && Number(form.duration_weeks) <= 0)
-      next.duration_weeks = "Duration must be a positive number.";
+    if (!form.instructorId) next.instructorId = "Select an instructor.";
+    if (form.durationWeeks && Number(form.durationWeeks) <= 0)
+      next.durationWeeks = "Duration must be a positive number.";
     setErrors(next);
     return Object.keys(next).length === 0;
   }
@@ -58,8 +58,8 @@ export default function CourseForm({
       title: form.title.trim(),
       description: form.description.trim(),
       category: form.category.trim(),
-      instructor_id: form.instructor_id,
-      duration_weeks: form.duration_weeks ? Number(form.duration_weeks) : null,
+      instructorId: form.instructorId,
+      durationWeeks: form.durationWeeks ? Number(form.durationWeeks) : null,
       status: form.status,
     });
   }
@@ -120,10 +120,10 @@ export default function CourseForm({
             Instructor <span className="text-red-500">*</span>
           </label>
           <select
-            value={form.instructor_id}
-            onChange={(e) => updateField("instructor_id", e.target.value)}
+            value={form.instructorId}
+            onChange={(e) => updateField("instructorId", e.target.value)}
             className={`w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
-              errors.instructor_id ? "border-red-400" : "border-slate-300"
+              errors.instructorId ? "border-red-400" : "border-slate-300"
             }`}
           >
             <option value="">Select instructor</option>
@@ -133,8 +133,8 @@ export default function CourseForm({
               </option>
             ))}
           </select>
-          {errors.instructor_id && (
-            <p className="text-xs text-red-500 mt-1">{errors.instructor_id}</p>
+          {errors.instructorId && (
+            <p className="text-xs text-red-500 mt-1">{errors.instructorId}</p>
           )}
         </div>
       </div>
@@ -147,15 +147,15 @@ export default function CourseForm({
           <input
             type="number"
             min={1}
-            value={form.duration_weeks}
-            onChange={(e) => updateField("duration_weeks", e.target.value)}
+            value={form.durationWeeks}
+            onChange={(e) => updateField("durationWeeks", e.target.value)}
             placeholder="e.g. 12"
             className={`w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
-              errors.duration_weeks ? "border-red-400" : "border-slate-300"
+              errors.durationWeeks ? "border-red-400" : "border-slate-300"
             }`}
           />
-          {errors.duration_weeks && (
-            <p className="text-xs text-red-500 mt-1">{errors.duration_weeks}</p>
+          {errors.durationWeeks && (
+            <p className="text-xs text-red-500 mt-1">{errors.durationWeeks}</p>
           )}
         </div>
         <div>

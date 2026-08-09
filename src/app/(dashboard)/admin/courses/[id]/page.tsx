@@ -9,17 +9,7 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 const COURSE_ENDPOINT = (id: string) => `${API_BASE}/api/courses/${id}`;
 const INSTRUCTORS_ENDPOINT = `${API_BASE}/api/users?role=instructor`;
 
-const CATEGORIES = [
-  "Full Stack Development",
-  "Artificial Intelligence",
-  "Data Science",
-  "Web Development",
-  "Mobile Development",
-  "Cloud Computing",
-  "DevOps",
-  "Cybersecurity",
-  "UI/UX Design",
-];
+
 
 type Instructor = { id: string; name: string };
 

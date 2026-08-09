@@ -1,3 +1,4 @@
+// data/projects
 import type { Coursework, CourseworkSeed } from "@/types";
 
 /** Projects — populate from your API. */

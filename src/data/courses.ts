@@ -1,3 +1,4 @@
+
 import type { Course } from "@/types";
 
 /** Courses — populate from your API. */

@@ -1,3 +1,4 @@
+//selectors.ts
 import { assignments } from "@/data/assignments";
 import { courseworkOfKind } from "@/data/coursework";
 import { courses, findCourse } from "@/data/courses";

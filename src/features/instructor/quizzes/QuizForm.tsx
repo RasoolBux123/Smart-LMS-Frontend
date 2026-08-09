@@ -26,16 +26,6 @@ import {
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
-function getCurrentUser(): { id: string; name: string } | null {
-  if (typeof window === "undefined") return null;
-  try {
-    const raw = localStorage.getItem("user");
-    return raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
-  }
-}
-
 function authHeaders(): HeadersInit {
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
   return token
@@ -68,7 +58,6 @@ type QuizFormValues = z.infer<typeof schema>;
 
 export default function QuizForm({ mode }: { mode: "create" | "edit" }) {
   const router = useRouter();
-  const currentUser = getCurrentUser();
 
   const [quizFile, setQuizFile] = useState<File | null>(null);
   const [courses, setCourses] = useState<Course[]>([]);
@@ -93,11 +82,13 @@ export default function QuizForm({ mode }: { mode: "create" | "edit" }) {
     setCoursesLoading(true);
     setCoursesError(null);
     try {
+      // The backend already scopes this to the logged-in instructor's own
+      // courses (list_courses filters by instructorId server-side), so no
+      // client-side filtering is needed here. Filtering again on the client
+      // against a possibly-mismatched localStorage user shape was the bug
+      // that caused "No courses available" even when courses existed.
       const all = await listCourses();
-      const mine = currentUser
-        ? all.filter((c) => c.instructorId === currentUser.id)
-        : all;
-      setCourses(mine);
+      setCourses(all);
     } catch (err: any) {
       setCoursesError(err.message || "Failed to load courses.");
     } finally {
