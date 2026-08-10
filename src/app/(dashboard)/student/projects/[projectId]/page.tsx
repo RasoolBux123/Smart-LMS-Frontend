@@ -98,7 +98,7 @@ export default function StudentProjectDetailPage() {
           <div>
             <h2 className="font-medium mb-2">Attachment</h2>
             
-              href={`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/${project.attachmentUrl}`}
+              <a href={`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/${project.attachmentUrl}`}
               target="_blank"
               rel="noopener noreferrer"
               className="text-sm text-primary underline"

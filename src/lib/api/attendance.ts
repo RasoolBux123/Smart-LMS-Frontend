@@ -22,14 +22,23 @@ export interface StudentAttendanceSummary {
     percentage: number;
     history: { date: string; courseId: string; status: AttendanceStatus }[];
 }
+export interface AttendanceDoc {
+    id: string;
+    courseId: string;
+    studentId: string;
+    date: string;
+    status: AttendanceStatus;
+}
 
+export async function getMyAttendance() {
+    return apiFetch<ApiEnvelope<AttendanceDoc[]>>("/attendance/my");
+}
 export async function markAttendance(payload: {
     courseId: string;
-    instructorEmail: string;
     date: string;
-    records: AttendanceRecord[];
+    attendance: { studentId: string; status: AttendanceStatus }[];
 }) {
-    return apiFetch<{ message: string }>("/attendance/mark", {
+    return apiFetch<{ success: boolean; message: string }>("/attendance", {
         method: "POST",
         body: JSON.stringify(payload),
     });
