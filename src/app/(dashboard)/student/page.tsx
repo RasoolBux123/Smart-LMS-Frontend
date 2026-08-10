@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   FileText,
@@ -15,27 +16,85 @@ import { EmptyState } from "@/components/shared/empty-state";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { courseworkLabels } from "@/features/student/coursework-config";
-import { currentStudent } from "@/data/users";
-import { allCourseworkForStudent, studentStats } from "@/lib/selectors";
-import { formatDate } from "@/lib/utils";
+import { getStudentCourses, type Enrollment } from "@/lib/api/enrollments";
+import { listAssignments, type Assignment } from "@/lib/api/assignments";
+import { useAuth } from "@/hooks/useAuth";
+import { toast } from "sonner";
 
 export default function StudentDashboardPage() {
-  const stats = studentStats(currentStudent.id);
-  const rows = allCourseworkForStudent(currentStudent.id);
-  const upcoming = rows
-    .filter((r) => r.studentStatus === "pending")
+  const { user } = useAuth();
+  const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
+  const [assignments, setAssignments] = useState<Assignment[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    total: 0,
+    submitted: 0,
+    pending: 0,
+    late: 0,
+  });
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // Fetch enrolled courses
+        const coursesData = await getStudentCourses();
+        setEnrollments(coursesData);
+
+        // Fetch all assignments for enrolled courses
+        const allAssignments: Assignment[] = [];
+        for (const enrollment of coursesData) {
+          try {
+            const res = await listAssignments(enrollment.courseId);
+            const assignmentList = Array.isArray(res) ? res : res?.data || [];
+            allAssignments.push(...assignmentList);
+          } catch (e) {
+            console.error(`Failed to fetch assignments for course ${enrollment.courseId}`);
+          }
+        }
+        setAssignments(allAssignments);
+
+        // Calculate stats
+        const total = allAssignments.length;
+        const submitted = allAssignments.filter((a) => a.submitted).length;
+        const pending = allAssignments.filter((a) => !a.submitted && new Date(a.dueAt) > new Date()).length;
+        const late = allAssignments.filter((a) => !a.submitted && new Date(a.dueAt) < new Date()).length;
+
+        setStats({ total, submitted, pending, late });
+      } catch (error) {
+        console.error("Failed to fetch dashboard data:", error);
+        toast.error("Dashboard data load nahi ho saka");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  // Get upcoming assignments (due within next 7 days)
+  const upcoming = assignments
+    .filter((a) => !a.submitted && new Date(a.dueAt) > new Date())
+    .sort((a, b) => new Date(a.dueAt).getTime() - new Date(b.dueAt).getTime())
     .slice(0, 5);
-  const recent = rows.slice(0, 6);
+
+  const recent = assignments.slice(0, 6);
+
+  if (loading) {
+    return (
+      <div className="flex justify-center py-10">
+        <p className="text-muted-foreground">Loading dashboard...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-1">
         <h1 className="font-display text-2xl font-semibold">
-          Welcome back, {currentStudent.name.split(" ")[0]}
+          Welcome back, {user?.name?.split(" ")[0] || "Student"} 👋
         </h1>
         <p className="text-sm text-muted-foreground">
-          Here&rsquo;s where things stand across your courses.
+          Here&rsquo;s where things stand across your {enrollments.length} course{enrollments.length > 1 ? "s" : ""}.
         </p>
       </div>
 
@@ -96,22 +155,22 @@ export default function StudentDashboardPage() {
               upcoming.map((a) => (
                 <Link
                   key={a.id}
-                  href={`${courseworkLabels[a.kind].basePath}/${a.id}`}
+                  href={`/student/assignments/${a.id}`}
                   className="flex items-center gap-4 rounded-xl border border-transparent p-3 transition-colors hover:border-border hover:bg-secondary/60"
                 >
                   <DeadlineRing
                     createdAt={a.createdAt}
-                    deadline={a.deadline}
+                    deadline={a.dueAt}
                     showLabel={false}
                     size={40}
                   />
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium">{a.title}</p>
                     <p className="mt-1 text-xs capitalize text-muted-foreground">
-                      {a.kind} · {a.courseCode} · Due {formatDate(a.deadline)}
+                      Assignment · Due {new Date(a.dueAt).toLocaleDateString()}
                     </p>
                   </div>
-                  <Badge variant="outline">{a.totalMarks} pts</Badge>
+                  <Badge variant="outline">{a.maxScore} pts</Badge>
                 </Link>
               ))
             )}
@@ -135,11 +194,13 @@ export default function StudentDashboardPage() {
               >
                 <div className="min-w-0">
                   <p className="truncate text-sm font-medium">{a.title}</p>
-                  <p className="mt-1 text-xs capitalize text-muted-foreground">
-                    {a.kind} · {a.courseCode}
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Assignment
                   </p>
                 </div>
-                <SubmissionStatusBadge status={a.studentStatus} />
+                <Badge variant={a.submitted ? "success" : "secondary"}>
+                  {a.submitted ? "Submitted" : "Pending"}
+                </Badge>
               </div>
             ))}
           </CardContent>

@@ -1,3 +1,5 @@
+import { getCourse } from "./courses";
+
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 export type Enrollment = {
@@ -6,6 +8,19 @@ export type Enrollment = {
   courseId: string;
   status: string;
   enrolledAt?: string;
+  progress?: number;
+  course?: {
+    id: string;
+    title: string;
+    description: string;
+    instructorId: string;
+    category: string;
+    level: string;
+    durationWeeks: number;
+    thumbnail: string;
+    enrollmentCount: number;
+    status: string;
+  };
   student?: {
     id: string;
     name: string;
@@ -43,3 +58,37 @@ export const unenrollStudent = (enrollmentId: string): Promise<void> =>
     method: "DELETE",
     headers: authHeaders(),
   }).then(handle);
+
+// ✅ FIX: /enrollments -> /enrollments/me (GET "" route exist hi nahi karta backend mein)
+export const getStudentCourses = async (): Promise<Enrollment[]> => {
+  try {
+    const response = await fetch(`${API_BASE}/enrollments/me`, {
+      headers: authHeaders(),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Request failed (${response.status})`);
+    }
+
+    const data = await response.json();
+    const enrollments: Enrollment[] = Array.isArray(data?.data) ? data.data : [];
+
+    // ✅ /enrollments/me course details join nahi karta backend mein,
+    // isliye har enrollment ke liye course alag se fetch karke enrich kar rahe hain
+    const enriched = await Promise.all(
+      enrollments.map(async (e) => {
+        try {
+          const course = await getCourse(e.courseId);
+          return { ...e, course: course as any };
+        } catch {
+          return e; // course fetch fail ho to bhi enrollment dikha do, bas course details khali
+        }
+      }),
+    );
+
+    return enriched;
+  } catch (error) {
+    console.error("Failed to fetch student courses:", error);
+    return [];
+  }
+};

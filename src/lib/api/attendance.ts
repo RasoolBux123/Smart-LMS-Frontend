@@ -15,12 +15,13 @@ export interface AttendanceSession {
     records: AttendanceRecord[];
 }
 
-export interface StudentAttendanceSummary {
-    totalSessions: number;
-    presentCount: number;
-    absentCount: number;
-    percentage: number;
-    history: { date: string; courseId: string; status: AttendanceStatus }[];
+// ✅ Backend ka attendance_to_public() shape (list item)
+export interface StudentAttendanceItem {
+    id: string;
+    courseId: string;
+    studentId: string;
+    date: string;
+    status: AttendanceStatus;
 }
 export interface AttendanceDoc {
     id: string;
@@ -50,9 +51,7 @@ export async function getCourseAttendance(courseId: string) {
     );
 }
 
-export async function getStudentAttendance(email: string, courseId?: string) {
-    const qs = courseId ? `?courseId=${courseId}` : "";
-    return apiFetch<ApiEnvelope<StudentAttendanceSummary>>(
-        `/attendance/student/${email}${qs}`,
-    );
+// ✅ /attendance/my se list milegi
+export async function getStudentAttendance() {
+    return apiFetch<ApiEnvelope<StudentAttendanceItem[]>>(`/attendance/my`);
 }

@@ -1,132 +1,109 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import {
-  listCourses,
-  listModules,
-  listMaterials,
-  Course,
-  Module,
-  Material,
-} from "@/lib/api/courses";
-import { ChevronDown, ChevronRight, BookOpen } from "lucide-react";
+import Link from "next/link";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
+import { EmptyState } from "@/components/shared/empty-state";
+// ✅ FIX: Import getStudentCourses instead
+import { getStudentCourses, type Enrollment } from "@/lib/api/enrollments";
+import { BookOpen, Clock, Users, ArrowRight } from "lucide-react";
+import { toast } from "sonner";
 
 export default function StudentCoursesPage() {
-  const [courses, setCourses] = useState<Course[]>([]);
+  const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
   const [loading, setLoading] = useState(true);
-  const [expanded, setExpanded] = useState<string | null>(null);
-  const [modulesByCourse, setModulesByCourse] = useState<Record<string, Module[]>>({});
-  const [materialsByModule, setMaterialsByModule] = useState<Record<string, Material[]>>({});
-  const [activeModule, setActiveModule] = useState<string | null>(null);
 
   useEffect(() => {
-    listCourses()
-      .then((res) => setCourses(res.data))
+    // ✅ FIX: Use getStudentCourses instead of listCourseEnrollments
+    getStudentCourses()
+      .then((data) => {
+        setEnrollments(Array.isArray(data) ? data : []);
+      })
+      .catch(() => toast.error("Courses load nahi ho sake"))
       .finally(() => setLoading(false));
   }, []);
 
-  async function toggleCourse(courseId: string) {
-    if (expanded === courseId) {
-      setExpanded(null);
-      return;
-    }
-    setExpanded(courseId);
-    if (!modulesByCourse[courseId]) {
-      const res = await listModules(courseId);
-      setModulesByCourse((prev) => ({ ...prev, [courseId]: res.data }));
-    }
+  if (loading) {
+    return (
+      <div className="flex justify-center py-10">
+        <p className="text-muted-foreground">Loading courses...</p>
+      </div>
+    );
   }
 
-  async function openModule(moduleId: string) {
-    setActiveModule(activeModule === moduleId ? null : moduleId);
-    if (!materialsByModule[moduleId]) {
-      const res = await listMaterials(moduleId);
-      setMaterialsByModule((prev) => ({ ...prev, [moduleId]: res.data }));
-    }
+  if (enrollments.length === 0) {
+    return (
+      <EmptyState
+        icon={BookOpen}
+        title="No courses enrolled"
+        description="You haven't enrolled in any courses yet. Browse available courses and start learning!"
+        action={
+          <Link href="/student/courses/available">
+            <Button>Browse Courses</Button>
+          </Link>
+        }
+      />
+    );
   }
 
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="font-display text-2xl font-semibold text-slate-900">My courses</h2>
-        <p className="mt-1 text-sm text-slate-500">Open modules and learning materials from your enrollments.</p>
+        <h1 className="font-display text-2xl font-semibold tracking-tight">My Courses</h1>
+        <p className="text-sm text-muted-foreground">
+          You are enrolled in {enrollments.length} course{enrollments.length > 1 ? "s" : ""}
+        </p>
       </div>
 
-      {loading ? (
-        <p className="text-sm text-slate-400">Loading…</p>
-      ) : courses.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-slate-200 bg-white px-6 py-14 text-center">
-          <BookOpen className="mx-auto mb-3 text-slate-300" size={28} />
-          <p className="text-sm text-slate-400">
-            You are not enrolled yet. Ask your instructor to enroll you.
-          </p>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {courses.map((c) => {
-            const open = expanded === c.id;
-            const modules = modulesByCourse[c.id] || [];
-            return (
-              <div key={c.id} className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-                <button
-                  type="button"
-                  onClick={() => toggleCourse(c.id)}
-                  className="flex w-full items-center justify-between px-5 py-4 text-left"
-                >
-                  <div>
-                    <p className="font-medium text-slate-900">{c.title}</p>
-                    <p className="mt-0.5 text-xs text-slate-500 line-clamp-1">
-                      {c.description || "No description"}
-                    </p>
-                  </div>
-                  {open ? <ChevronDown size={18} className="text-slate-400" /> : <ChevronRight size={18} className="text-slate-400" />}
-                </button>
-                {open && (
-                  <div className="space-y-3 border-t border-slate-100 bg-teal-50/30 px-5 py-4">
-                    {modules.length === 0 ? (
-                      <p className="text-sm text-slate-400">No modules published yet.</p>
-                    ) : (
-                      modules.map((m) => (
-                        <div key={m.id} className="rounded-xl border border-slate-200 bg-white p-4">
-                          <button
-                            type="button"
-                            onClick={() => openModule(m.id)}
-                            className="flex w-full items-center justify-between text-left"
-                          >
-                            <span className="text-sm font-medium text-slate-800">{m.title}</span>
-                            {activeModule === m.id ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-                          </button>
-                          {activeModule === m.id && (
-                            <div className="mt-3 space-y-2 border-t border-slate-100 pt-3">
-                              {(materialsByModule[m.id] || []).length === 0 ? (
-                                <p className="text-xs text-slate-400">No materials yet.</p>
-                              ) : (
-                                (materialsByModule[m.id] || []).map((mat) => (
-                                  <div key={mat.id} className="rounded-lg bg-slate-50 px-3 py-2">
-                                    <p className="text-sm font-medium text-slate-800">{mat.title}</p>
-                                    {mat.content && (
-                                      <p className="mt-1 whitespace-pre-wrap text-xs text-slate-500">{mat.content}</p>
-                                    )}
-                                    {mat.url && (
-                                      <a href={mat.url} target="_blank" rel="noreferrer" className="mt-1 inline-block text-xs text-teal-700 underline">
-                                        Open link
-                                      </a>
-                                    )}
-                                  </div>
-                                ))
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      ))
-                    )}
-                  </div>
-                )}
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {enrollments.map((enrollment) => (
+          <Card key={enrollment.id} className="overflow-hidden">
+            <CardHeader className="border-b bg-muted/20">
+              <div className="flex items-start justify-between">
+                <div>
+                  <CardTitle className="text-lg">{enrollment.course?.title || "Course"}</CardTitle>
+                  <CardDescription className="mt-1 line-clamp-2">
+                    {enrollment.course?.description || "No description"}
+                  </CardDescription>
+                </div>
+                <Badge variant={enrollment.status === "active" ? "success" : "secondary"}>
+                  {enrollment.status || "Active"}
+                </Badge>
               </div>
-            );
-          })}
-        </div>
-      )}
+            </CardHeader>
+            <CardContent className="pt-4">
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Users className="h-4 w-4" />
+                  <span>{enrollment.course?.enrollmentCount || 0} students</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Clock className="h-4 w-4" />
+                  <span>{enrollment.course?.durationWeeks || 4} weeks</span>
+                </div>
+                <div className="space-y-1">
+                  <div className="flex justify-between text-sm">
+                    <span>Progress</span>
+                    <span className="font-medium">{enrollment.progress || 0}%</span>
+                  </div>
+                  <Progress value={enrollment.progress || 0} className="h-2" />
+                </div>
+              </div>
+            </CardContent>
+            <CardFooter className="border-t bg-muted/10 pt-4">
+              <Button asChild className="w-full">
+                <Link href={`/student/courses/${enrollment.course?.id || enrollment.courseId}`}>
+                  Continue Learning
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+              </Button>
+            </CardFooter>
+          </Card>
+        ))}
+      </div>
     </div>
   );
 }

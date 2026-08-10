@@ -13,15 +13,25 @@ export interface AssignmentListParams {
   status?: AssignmentStatus | "all";
 }
 
-export async function getAssignments(params: AssignmentListParams = {}) {
+export async function getAssignments(
+  params: AssignmentListParams = {},
+) {
   const qs = new URLSearchParams();
-  if (params.search) qs.set("search", params.search);
-  if (params.status && params.status !== "all") qs.set("status", params.status);
+
+  if (params.search) {
+    qs.set("search", params.search);
+  }
+
+  if (params.status && params.status !== "all") {
+    qs.set("status", params.status);
+  }
 
   const suffix = qs.toString() ? `?${qs.toString()}` : "";
-  const response = await apiFetch<AssignmentListItem[] | ApiEnvelope<AssignmentListItem[]>>(
-    `/assignments${suffix}`,
-  );
+
+  const response = await apiFetch<
+    AssignmentListItem[] | ApiEnvelope<AssignmentListItem[]>
+  >(`/assignments${suffix}`);
+
   return Array.isArray(response) ? response : response.data ?? [];
 }
 
@@ -46,7 +56,10 @@ export function updateAssignment(
   });
 }
 
-export function updateAssignmentStatus(id: string, status: AssignmentStatus) {
+export function updateAssignmentStatus(
+  id: string,
+  status: AssignmentStatus,
+) {
   return apiFetch<AssignmentEntity>(`/assignments/${id}/status`, {
     method: "PATCH",
     body: JSON.stringify({ status }),
@@ -54,53 +67,68 @@ export function updateAssignmentStatus(id: string, status: AssignmentStatus) {
 }
 
 export function duplicateAssignment(id: string) {
-  return apiFetch<AssignmentListItem>(`/assignments/${id}/duplicate`, {
-    method: "POST",
-  });
+  return apiFetch<AssignmentListItem>(
+    `/assignments/${id}/duplicate`,
+    {
+      method: "POST",
+    },
+  );
 }
 
 export function deleteAssignment(id: string) {
-  return apiFetch<void>(`/assignments/${id}`, { method: "DELETE" });
-}
-
-/**
- * Attachment alag request me jata hai (assignment ban jane ke baad).
- * Agar backend poora form ek hi multipart request me chahta hai, to
- * create/update ko FormData par shift karna hoga — abhi JSON par hai.
- */
-export function uploadAssignmentAttachment(id: string, file: File) {
-  const form = new FormData();
-  form.append("file", file);
-
-  return apiFetch<AssignmentAttachment>(`/assignments/${id}/attachments`, {
-    method: "POST",
-    body: form,
-  });
-}
-
-export function deleteAssignmentAttachment(id: string, attachmentId: string) {
-  return apiFetch<void>(`/assignments/${id}/attachments/${attachmentId}`, {
+  return apiFetch<void>(`/assignments/${id}`, {
     method: "DELETE",
   });
 }
 
-/** Form ke course dropdown ke liye. Alag file chahiye ho to `lib/api/courses.ts` bana lena. */
+export function uploadAssignmentAttachment(
+  id: string,
+  file: File,
+) {
+  const form = new FormData();
+  form.append("file", file);
+
+  return apiFetch<AssignmentAttachment>(
+    `/assignments/${id}/attachments`,
+    {
+      method: "POST",
+      body: form,
+    },
+  );
+}
+
+export function deleteAssignmentAttachment(
+  id: string,
+  attachmentId: string,
+) {
+  return apiFetch<void>(
+    `/assignments/${id}/attachments/${attachmentId}`,
+    {
+      method: "DELETE",
+    },
+  );
+}
+
 export async function getCourseOptions() {
   const res = await apiFetch<{ data: CourseOption[] }>("/courses");
   return res.data;
 }
 
+// Backend route path parameter leta hai, query parameter nahi
+export async function listAssignments(courseId?: string) {
+  if (!courseId) return [];
+
+  const res = await apiFetch<any>(
+    `/assignments/course/${encodeURIComponent(courseId)}`,
+  );
+
+  return res?.data || res || [];
+}
+
 /* ================================================================
-   Legacy API (zip 1) — gradebook aur grades pages inhi par chalte
-   hain. Ye `{ data }` envelope return karte hain, upar wale naye
-   endpoints raw object dete hain. Dono saath chal sakte hain.
+   Legacy API
    ================================================================ */
 
-/**
- * Legacy shapes — gradebook aur grades pages inhi fields par likhe hain
- * (`type`, `maxScore`, `score`, `content`). Naye modules `@/types/assignment`
- * wale canonical types use karte hain.
- */
 export interface Assignment {
   id: string;
   courseId: string;
@@ -128,46 +156,126 @@ export interface Submission {
 type AssignmentModel = Assignment;
 type SubmissionModel = Submission;
 
-/** Ek course ke saare assignments. */
+// Backend route path parameter leta hai, query parameter nahi
 export function listAssignmentsForCourse(courseId: string) {
   return apiFetch<ApiEnvelope<AssignmentModel[]>>(
-    `/assignments?courseId=${encodeURIComponent(courseId)}`,
+    `/assignments/course/${encodeURIComponent(courseId)}`,
   );
 }
 
-/** Ek assignment par aayi hui saari submissions (instructor view). */
 export function listSubmissions(assignmentId: string) {
   return apiFetch<ApiEnvelope<SubmissionModel[]>>(
     `/assignments/${assignmentId}/submissions`,
   );
 }
 
-/** Submission ko marks aur feedback dena. */
 export function gradeSubmission(
   submissionId: string,
   score: number,
   feedback = "",
 ) {
+  // Backend route: /assignments/submissions/{id}/grade
   return apiFetch<ApiEnvelope<SubmissionModel>>(
-    `/submissions/${submissionId}/grade`,
+    `/assignments/submissions/${submissionId}/grade`,
     {
       method: "PATCH",
-      body: JSON.stringify({ marksAwarded: score, feedback }),
+      body: JSON.stringify({ score, feedback }),
     },
   );
 }
 
-/** Logged-in student ke apne grades, ek course ke liye. */
+// Correct backend route
 export function myGrades(courseId: string) {
+  if (!courseId) {
+    return Promise.resolve({
+      success: true,
+      data: [],
+      message: "no course selected",
+    } as ApiEnvelope<SubmissionModel[]>);
+  }
+
   return apiFetch<ApiEnvelope<SubmissionModel[]>>(
-    `/submissions/me?courseId=${encodeURIComponent(courseId)}`,
+    `/assignments/course/${encodeURIComponent(courseId)}/my-grades`,
   );
 }
 
-/** Student ki submission upload karna (file ya text). */
-export function submitAssignment(assignmentId: string, form: FormData) {
+export function submitAssignment(
+  assignmentId: string,
+  form: FormData,
+) {
   return apiFetch<ApiEnvelope<SubmissionModel>>(
     `/assignments/${assignmentId}/submissions`,
-    { method: "POST", body: form },
+    {
+      method: "POST",
+      body: form,
+    },
   );
+}
+
+/* ================================================================
+   NEW: Grades ko assignment details ke saath enrich karna
+
+   Backend ki submission_to_public() mein title/maxScore/percentage
+   nahi aata, isliye frontend mein assignment list se merge kar rahe hain.
+   ================================================================ */
+
+export interface EnrichedGrade {
+  id: string;
+  assignmentId: string;
+  assignmentTitle: string;
+  courseId: string;
+  courseName: string;
+  score: number;
+  maxScore: number;
+  percentage: number;
+  feedback?: string | null;
+  gradedAt?: string | null;
+}
+
+export async function getMyGradesForCourse(
+  courseId: string,
+  courseName: string = "",
+): Promise<EnrichedGrade[]> {
+  const [gradesRes, assignmentsRes] = await Promise.all([
+    myGrades(courseId),
+    listAssignmentsForCourse(courseId),
+  ]);
+
+  const submissions = (gradesRes as any)?.data || [];
+  const assignments = (assignmentsRes as any)?.data || [];
+
+  const assignmentMap = new Map(
+    assignments.map((a: any) => [a.id, a]),
+  );
+
+  return submissions
+    .filter(
+      (s: any) =>
+        s.score !== null && s.score !== undefined,
+    )
+    .map((s: any) => {
+      const assignment: any =
+        assignmentMap.get(s.assignmentId) || {};
+
+      const maxScore = assignment.maxScore || 100;
+
+      const percentage =
+        maxScore > 0
+          ? Math.round((s.score / maxScore) * 100)
+          : 0;
+
+      return {
+        id: s.id,
+        assignmentId: s.assignmentId,
+        assignmentTitle:
+          assignment.title || "Untitled",
+        courseId,
+        courseName,
+        score: s.score,
+        maxScore,
+        percentage,
+        feedback: s.feedback,
+        gradedAt: s.gradedAt,
+      };
+    });
 }

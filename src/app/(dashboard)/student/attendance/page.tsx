@@ -5,12 +5,22 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { AttendanceRing } from "@/components/shared/attendance-ring";
 import { EmptyState } from "@/components/shared/empty-state";
+<<<<<<< ours
 import { getMyAttendance, type AttendanceDoc } from "@/lib/api/attendance";
 import { CalendarDays, CheckCircle2, XCircle, MinusCircle } from "lucide-react";
+=======
+import {
+    getStudentAttendance,
+    type StudentAttendanceItem,
+} from "@/lib/api/attendance";
+import { useCurrentUser } from "@/hooks/use-current-user";
+import { CalendarDays, CheckCircle2, XCircle } from "lucide-react";
+>>>>>>> theirs
 import LoadingSpinner from "@/app/components/ui/LoadingSpinner";
 import { toast } from "sonner";
 
 export default function StudentAttendancePage() {
+<<<<<<< ours
     const [records, setRecords] = useState<AttendanceDoc[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -36,6 +46,22 @@ export default function StudentAttendancePage() {
     if (loading) return <LoadingSpinner />;
 
     if (records.length === 0) {
+=======
+    const { user } = useCurrentUser();
+    const [history, setHistory] = useState<StudentAttendanceItem[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        getStudentAttendance()
+            .then((res) => setHistory(Array.isArray(res.data) ? res.data : []))
+            .catch(() => setHistory([]))
+            .finally(() => setLoading(false));
+    }, []);
+
+    if (loading) return <LoadingSpinner />;
+
+    if (history.length === 0) {
+>>>>>>> theirs
         return (
             <EmptyState
                 icon={CalendarDays}
@@ -44,6 +70,11 @@ export default function StudentAttendancePage() {
             />
         );
     }
+
+    // ✅ Summary ab frontend mein hi calculate ho rahi hai (backend sirf list deta hai)
+    const totalSessions = history.length;
+    const presentCount = history.filter((h) => h.status === "present").length;
+    const percentage = totalSessions > 0 ? Math.round((presentCount / totalSessions) * 100) : 0;
 
     return (
         <div className="space-y-6">
@@ -75,9 +106,15 @@ export default function StudentAttendancePage() {
                         <CardTitle>Session History</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-2">
+<<<<<<< ours
                         {records.map((r) => (
                             <div
                                 key={r.id}
+=======
+                        {history.map((h) => (
+                            <div
+                                key={h.id}
+>>>>>>> theirs
                                 className="flex items-center justify-between rounded-xl border border-border p-3"
                             >
                                 <div className="flex items-center gap-2 text-sm">
@@ -88,7 +125,11 @@ export default function StudentAttendancePage() {
                                     ) : (
                                         <MinusCircle className="h-4 w-4 text-warning" />
                                     )}
+<<<<<<< ours
                                     {r.date}
+=======
+                                    {new Date(h.date).toLocaleDateString()}
+>>>>>>> theirs
                                 </div>
                                 <Badge
                                     variant={

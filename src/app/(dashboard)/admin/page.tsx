@@ -26,12 +26,11 @@ export default function AdminDashboardPage() {
           listCourses(),
         ]);
 
-        setInstructors(i?.data ?? []);
-        setStudents(s?.data ?? []);
-        setCourses(c?.data ?? []);
+        setInstructors(Array.isArray(i) ? i : []);
+        setStudents(Array.isArray(s) ? s : []);
+        setCourses(Array.isArray(c) ? c : []);
       } catch (e) {
-        console.error("Admin dashboard loading error:", e);
-
+        console.error("Failed to load admin data:", e);
         setInstructors([]);
         setStudents([]);
         setCourses([]);
@@ -46,21 +45,21 @@ export default function AdminDashboardPage() {
   const stats = [
     {
       label: "Instructors",
-      value: instructors.length,
+      value: instructors?.length ?? 0,
       href: "/admin/users",
       icon: GraduationCap,
       tint: "bg-indigo-50 text-indigo-700",
     },
     {
       label: "Students",
-      value: students.length,
+      value: students?.length ?? 0,
       href: "/admin/users",
       icon: Users,
       tint: "bg-teal-50 text-teal-700",
     },
     {
       label: "Courses",
-      value: courses.length,
+      value: courses?.length ?? 0,
       href: "/admin/courses",
       icon: BookOpen,
       tint: "bg-amber-50 text-amber-700",

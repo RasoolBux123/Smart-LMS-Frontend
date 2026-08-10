@@ -40,23 +40,41 @@ export default function InstructorAttendancePage() {
     const [selectedToAdd, setSelectedToAdd] = useState("");
     const [saving, setSaving] = useState(false);
 
+<<<<<<< ours
     // courses.ts apna handle() use karta hai -> already unwrapped array
     useEffect(() => {
         listCourses()
             .then((data) => {
                 setCourses(data);
                 if (data.length) setCourseId(data[0].id);
+=======
+    // ✅ FIX: listCourses returns array directly
+    useEffect(() => {
+        listCourses()
+            .then((res) => {
+                const courseList = Array.isArray(res) ? res : [];
+                setCourses(courseList);
+                if (courseList.length) setCourseId(courseList[0].id);
+>>>>>>> theirs
             })
             .catch(() => toast.error("Courses load nahi ho sake"));
     }, []);
 
+<<<<<<< ours
     // users.ts apiFetch use karta hai -> envelope milta hai, isliye .data
+=======
+    // ✅ FIX: listUsers returns array directly
+>>>>>>> theirs
     useEffect(() => {
         listUsers("student")
-            .then((res) => setAllStudents(res.data))
+            .then((res) => {
+                const userList = Array.isArray(res) ? res : [];
+                setAllStudents(userList);
+            })
             .catch(() => toast.error("Students list load nahi ho saki"));
     }, []);
 
+<<<<<<< ours
     // backend date "2026-08-10" ya ISO datetime — dono se YYYY-MM-DD nikaal lo
 const toDateKey = (d: string) => String(d).slice(0, 10);
 
@@ -94,6 +112,27 @@ const loadEnrolledStudents = async (id: string, date: string) => {
         toast.error("Enrolled students load nahi ho sake");
     }
 };
+=======
+    const loadEnrolledStudents = async (id: string) => {
+        try {
+            const res = await listCourseEnrollments(id);
+            // ✅ FIX: Extract data safely
+            const enrolledData = res?.data || res || [];
+            setStudents(
+                enrolledData
+                    .filter((e: any) => e.student)
+                    .map((e: any) => ({
+                        email: e.student!.email,
+                        name: e.student!.name,
+                        status: "present" as LocalStatus,
+                    })),
+            );
+        } catch {
+            toast.error("Enrolled students load nahi ho sake");
+            setStudents([]);
+        }
+    };
+>>>>>>> theirs
 
     useEffect(() => {
         if (!courseId) return;

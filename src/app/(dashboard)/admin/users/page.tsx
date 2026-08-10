@@ -1,146 +1,166 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { listUsers, ManagedUser } from "@/lib/api/users";
-import AddUserDrawer from "@/app/components/admin/AddUserDrawer";
-import { errorMessage } from "@/lib/utils";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import AddUserDrawer from "@/components/admin/AddUserDrawer";
+import { listUsers, type ManagedUser } from "@/lib/api/users";
+import { Search, UserPlus } from "lucide-react";
+import { toast } from "sonner";
 
 export default function AdminUsersPage() {
-  const [tab, setTab] = useState<"instructor" | "student">("instructor");
   const [instructors, setInstructors] = useState<ManagedUser[]>([]);
   const [students, setStudents] = useState<ManagedUser[]>([]);
   const [loading, setLoading] = useState(true);
-  const [drawer, setDrawer] = useState<"instructor" | "student" | null>(null);
+  const [search, setSearch] = useState("");
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [selectedRole, setSelectedRole] = useState<"instructor" | "student">("student");
 
-  async function loadAll() {
+  const loadUsers = async () => {
     setLoading(true);
     try {
-      const [iRes, sRes] = await Promise.all([listUsers("instructor"), listUsers("student")]);
-      setInstructors(iRes.data);
-      setStudents(sRes.data);
-    } catch (err: unknown) {
-      console.error("Failed to load users:", errorMessage(err));
+      const [i, s] = await Promise.all([
+        listUsers("instructor"),
+        listUsers("student"),
+      ]);
+      setInstructors(Array.isArray(i) ? i : i?.data || []);
+      setStudents(Array.isArray(s) ? s : s?.data || []);
+    } catch {
+      toast.error("Users load nahi ho sake");
     } finally {
       setLoading(false);
     }
-  }
+  };
 
   useEffect(() => {
-    loadAll();
+    loadUsers();
   }, []);
 
-  function handleCreated(user: ManagedUser) {
-    if (user.role === "instructor") setInstructors((prev) => [user, ...prev]);
-    else setStudents((prev) => [user, ...prev]);
-  }
+  const filteredInstructors = instructors.filter((u) =>
+    u.name?.toLowerCase().includes(search.toLowerCase()) ||
+    u.email?.toLowerCase().includes(search.toLowerCase())
+  );
 
-  const rows = tab === "instructor" ? instructors : students;
-  const accent = tab === "instructor" ? "#4F46E5" : "#0D9488";
+  const filteredStudents = students.filter((u) =>
+    u.name?.toLowerCase().includes(search.toLowerCase()) ||
+    u.email?.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const handleAddUser = (role: "instructor" | "student") => {
+    setSelectedRole(role);
+    setDrawerOpen(true);
+  };
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h2 className="font-display text-2xl font-semibold text-slate-900">Manage users</h2>
-          <p className="mt-1 text-sm text-slate-500">Create instructor and student accounts.</p>
+          <h1 className="font-display text-2xl font-semibold tracking-tight">Manage Users</h1>
+          <p className="text-sm text-muted-foreground">
+            Create instructor and student accounts.
+          </p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <button
-            onClick={() => setDrawer("instructor")}
-            className="rounded-xl px-4 py-2.5 text-sm font-medium text-white"
-            style={{ backgroundColor: "#4F46E5" }}
-          >
-            + Add instructor
-          </button>
-          <button
-            onClick={() => setDrawer("student")}
-            className="rounded-xl px-4 py-2.5 text-sm font-medium text-white"
-            style={{ backgroundColor: "#0D9488" }}
-          >
-            + Add student
-          </button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => handleAddUser("instructor")}>
+            <UserPlus className="h-4 w-4 mr-2" />
+            Add Instructor
+          </Button>
+          <Button onClick={() => handleAddUser("student")}>
+            <UserPlus className="h-4 w-4 mr-2" />
+            Add Student
+          </Button>
         </div>
       </div>
 
-      <div className="flex gap-2 rounded-xl border border-slate-200 bg-white p-1 w-fit">
-        <button
-          onClick={() => setTab("instructor")}
-          className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
-            tab === "instructor" ? "bg-indigo-50 text-indigo-700" : "text-slate-500"
-          }`}
-        >
-          Instructors ({instructors.length})
-        </button>
-        <button
-          onClick={() => setTab("student")}
-          className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
-            tab === "student" ? "bg-teal-50 text-teal-700" : "text-slate-500"
-          }`}
-        >
-          Students ({students.length})
-        </button>
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          placeholder="Search users..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="pl-9"
+        />
       </div>
 
-      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-slate-100 bg-slate-50/80 text-left text-xs uppercase tracking-wide text-slate-500">
-              <th className="px-6 py-3">Name</th>
-              <th className="px-6 py-3">Email</th>
-              <th className="px-6 py-3">Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading && (
-              <tr>
-                <td colSpan={3} className="px-6 py-10 text-center text-slate-400">
-                  Loading…
-                </td>
-              </tr>
-            )}
-            {!loading && rows.length === 0 && (
-              <tr>
-                <td colSpan={3} className="px-6 py-10 text-center text-slate-400">
-                  No {tab}s yet — add one above.
-                </td>
-              </tr>
-            )}
-            {rows.map((u) => (
-              <tr key={u.id} className="border-b border-slate-50 last:border-0">
-                <td className="px-6 py-4">
-                  <div className="flex items-center gap-3">
-                    <div
-                      className="flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold text-white"
-                      style={{ backgroundColor: accent }}
-                    >
-                      {u.name.slice(0, 2).toUpperCase()}
+      <Tabs defaultValue="instructors">
+        <TabsList>
+          <TabsTrigger value="instructors">
+            Instructors ({instructors.length})
+          </TabsTrigger>
+          <TabsTrigger value="students">
+            Students ({students.length})
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="instructors" className="mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                <span>Instructors</span>
+                <Badge variant="secondary">{filteredInstructors.length}</Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <p className="text-sm text-muted-foreground">Loading...</p>
+              ) : filteredInstructors.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No instructors found.</p>
+              ) : (
+                <div className="divide-y divide-border">
+                  {filteredInstructors.map((user) => (
+                    <div key={user.id} className="flex items-center justify-between py-3">
+                      <div>
+                        <p className="font-medium">{user.name}</p>
+                        <p className="text-sm text-muted-foreground">{user.email}</p>
+                      </div>
+                      <Badge variant="outline">{user.role}</Badge>
                     </div>
-                    <span className="font-medium text-slate-900">{u.name}</span>
-                  </div>
-                </td>
-                <td className="px-6 py-4 text-slate-600">{u.email}</td>
-                <td className="px-6 py-4">
-                  <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium capitalize text-emerald-700">
-                    {u.status}
-                  </span>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="students" className="mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                <span>Students</span>
+                <Badge variant="secondary">{filteredStudents.length}</Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <p className="text-sm text-muted-foreground">Loading...</p>
+              ) : filteredStudents.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No students found.</p>
+              ) : (
+                <div className="divide-y divide-border">
+                  {filteredStudents.map((user) => (
+                    <div key={user.id} className="flex items-center justify-between py-3">
+                      <div>
+                        <p className="font-medium">{user.name}</p>
+                        <p className="text-sm text-muted-foreground">{user.email}</p>
+                      </div>
+                      <Badge variant="outline">{user.role}</Badge>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
 
       <AddUserDrawer
-        role="instructor"
-        open={drawer === "instructor"}
-        onClose={() => setDrawer(null)}
-        onCreated={handleCreated}
-      />
-      <AddUserDrawer
-        role="student"
-        open={drawer === "student"}
-        onClose={() => setDrawer(null)}
-        onCreated={handleCreated}
+        open={drawerOpen}
+        onOpenChange={setDrawerOpen}
+        role={selectedRole}
+        onSuccess={loadUsers}
       />
     </div>
   );

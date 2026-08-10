@@ -220,3 +220,44 @@ export function submissionStatusBreakdown() {
     { name: "Late", value: count("late"), color: "var(--danger)" },
   ];
 }
+
+/** Generic version — kisi bhi coursework kind (quiz, exam, project mock-data waghera) ke liye instructor ki list. */
+export function courseworkForInstructor(instructorId: string, kind: CourseworkKind) {
+  return courseworkOfKind(kind)
+    .filter((c) => c.instructorId === instructorId)
+    .map((c) => {
+      const course = findCourse(c.courseId)!;
+      const subs = submissionsFor(c.id);
+
+      const enrolled = course.studentIds.length;
+      const submittedCount = subs.filter(
+        (s) => s.status !== "pending" && s.status !== "draft",
+      ).length;
+      const gradedCount = subs.filter((s) => s.marksAwarded !== null).length;
+      const lateCount = subs.filter((s) => s.status === "late").length;
+
+      return { ...c, course, enrolled, submittedCount, gradedCount, lateCount };
+    })
+    .sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    );
+}
+
+/** Generic version of submissionRowsForAssignment — kisi bhi kind ke liye. */
+export function submissionRowsForCoursework(courseworkId: string, kind: CourseworkKind) {
+  const item = courseworkOfKind(kind).find((c) => c.id === courseworkId);
+  if (!item) return [];
+
+  const course = findCourse(item.courseId)!;
+
+  return course.studentIds.map((studentId) => {
+    const student = findUser(studentId)!;
+    const submission = submissionFor(courseworkId, studentId);
+
+    return {
+      student,
+      submission,
+      status: deriveStudentStatus(item.deadline, submission),
+    };
+  });
+}
