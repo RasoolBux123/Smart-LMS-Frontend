@@ -60,10 +60,14 @@ export function AssignmentStatusBadge({
   status,
   className,
 }: {
-  status: AssignmentStatusMeta;
+  status?: AssignmentStatusMeta;
   className?: string;
 }) {
-  const meta = assignmentMap[status];
+  const meta = assignmentMap[status ?? "draft"] ?? {
+    label: "Unknown",
+    variant: "secondary",
+    icon: FileEdit,
+  };
   const Icon = meta.icon;
   return (
     <Badge variant={meta.variant} className={cn(className)}>

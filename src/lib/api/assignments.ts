@@ -13,13 +13,16 @@ export interface AssignmentListParams {
   status?: AssignmentStatus | "all";
 }
 
-export function getAssignments(params: AssignmentListParams = {}) {
+export async function getAssignments(params: AssignmentListParams = {}) {
   const qs = new URLSearchParams();
   if (params.search) qs.set("search", params.search);
   if (params.status && params.status !== "all") qs.set("status", params.status);
 
   const suffix = qs.toString() ? `?${qs.toString()}` : "";
-  return apiFetch<AssignmentListItem[]>(`/assignments${suffix}`);
+  const response = await apiFetch<AssignmentListItem[] | ApiEnvelope<AssignmentListItem[]>>(
+    `/assignments${suffix}`,
+  );
+  return Array.isArray(response) ? response : response.data ?? [];
 }
 
 export function getAssignment(id: string) {

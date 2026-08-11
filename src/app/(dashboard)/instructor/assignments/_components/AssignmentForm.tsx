@@ -46,19 +46,15 @@ const fileKinds: { value: FileKind; label: string }[] = [
   { value: "zip", label: "ZIP" },
 ];
 
-/**
- * Schema mode par depend karta hai: edit me deadline future ki hona zaroori
- * nahi, warna purani assignment kabhi save hi nahi hogi.
- */
 function buildSchema(mode: "create" | "edit") {
   const deadline =
     mode === "create"
       ? z
-        .string()
-        .min(1, "Set a deadline")
-        .refine((value) => new Date(value) > new Date(), {
-          message: "Deadline must be a future date and time",
-        })
+          .string()
+          .min(1, "Set a deadline")
+          .refine((value) => new Date(value) > new Date(), {
+            message: "Deadline must be a future date and time",
+          })
       : z.string().min(1, "Set a deadline");
 
   return z.object({
@@ -164,15 +160,26 @@ export function AssignmentForm({
     };
 
     try {
-      const saved =
+      const response =
         mode === "edit" && assignmentId
           ? await updateAssignment(assignmentId, payload)
           : await createAssignment(payload);
 
+      // Backend envelope handle: { success, data, message }
+      const saved = (response as any)?.data ?? response;
+      const finalId = saved?.id || saved?._id;
+
+      if (!finalId) {
+        console.error("No ID received. Full response:", response);
+        toast.error("Assignment saved, but ID not received from server.");
+        return;
+      }
+
       if (attachment) {
         try {
-          await uploadAssignmentAttachment(saved.id, attachment);
-        } catch {
+          await uploadAssignmentAttachment(finalId, attachment);
+        } catch (err) {
+          console.error("Attachment upload failed:", err);
           toast.error("Assignment saved, but the attachment failed to upload.");
         }
       }
@@ -181,6 +188,7 @@ export function AssignmentForm({
       router.push("/instructor/assignments");
       router.refresh();
     } catch (error) {
+      console.error("Submit error:", error);
       toast.error(
         error instanceof Error ? error.message : "Something went wrong.",
       );
@@ -262,7 +270,6 @@ export function AssignmentForm({
                   selected={deadlineDate}
                   onChange={(date: Date | null) => {
                     setDeadlineDate(date);
-                    // clear karne par bhi form value sync honi chahiye
                     field.onChange(date ? date.toISOString() : "");
                   }}
                   onBlur={field.onBlur}
